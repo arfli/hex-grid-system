@@ -13,7 +13,7 @@ Scenario coordinates use axial hex coordinates (`q`, `r`). Terrain placement use
 
 Weapon ranges are stored in meters and converted to hexes by the engine. A weapon may define `optimalRangeMeters`, `maxRangeMeters`, close/long-range accuracy, penetration, and `stationaryOnly`. Units separately define armor, health, mobility, and crew quality. Scenario-wide visibility and crosswind settings belong in `environment`.
 
-`movement` is a per-turn movement-point allowance. Terrain consumes its configured `movementCost`, and units may move repeatedly until their points are gone. `combat.reactionAccuracyModifier` controls the scenario-wide penalty for opportunity fire.
+`movement` is a per-turn movement-point allowance. Terrain consumes its configured `movementCost`, and units may move repeatedly until their points are gone.
 
 ## Extension points
 

@@ -1,14 +1,19 @@
 :root { --ink:#e9e1cf; --muted:#a79d88; --panel:#171814; --edge:#474533; --accent:#e9743f; }
 * { box-sizing:border-box; }
-body { margin:0; background:#0d0e0c; color:var(--ink); font:14px/1.4 ui-monospace,SFMono-Regular,Consolas,monospace; overflow-x:hidden; }
+html, body { height:100%; }
+body { display:grid; grid-template-rows:auto minmax(0,1fr); margin:0; background:#0d0e0c; color:var(--ink); font:14px/1.4 ui-monospace,SFMono-Regular,Consolas,monospace; overflow:hidden; }
 header { display:flex; align-items:center; justify-content:space-between; gap:18px; padding:14px 20px; background:#161711; border-bottom:1px solid var(--edge); }
 h1 { margin:0; font:700 20px/1.1 system-ui; letter-spacing:.08em; text-transform:uppercase; }
 .kicker { color:var(--accent); font-size:11px; letter-spacing:.16em; }
 .scale { color:var(--muted); text-align:right; } .scale b { color:var(--ink); }
-main { display:grid; grid-template-columns:minmax(0,1fr) 310px; min-height:calc(100vh - 67px); }
-#boardWrap { position:relative; min-width:0; background:#272317; overflow:auto; padding:18px; }
-canvas { display:block; max-width:none; background:#81714b; box-shadow:0 8px 40px #0009; cursor:crosshair; }
-aside { background:var(--panel); border-left:1px solid var(--edge); padding:18px; display:flex; flex-direction:column; gap:16px; }
+.headerTools { display:flex; align-items:center; justify-content:flex-end; gap:10px; } .headerTools label { color:var(--muted); font-size:11px; text-transform:uppercase; } select { border:1px solid #686448; background:#292a21; color:var(--ink); padding:7px 9px; font:12px ui-monospace; }
+main { display:grid; grid-template-columns:minmax(0,1fr) 310px; height:100%; min-height:0; overflow:hidden; }
+#boardWrap { position:relative; min-width:0; min-height:0; height:100%; background:#272317; overflow:auto; padding:18px; overscroll-behavior:contain; scrollbar-color:#777155 #24241d; cursor:grab; user-select:none; touch-action:none; }
+#boardWrap.is-panning { cursor:grabbing; }
+canvas { display:block; max-width:none; background:#81714b; box-shadow:0 8px 40px #0009; cursor:inherit; transform-origin:top left; }
+#mapControls { position:sticky; z-index:10; top:0; left:0; display:flex; align-items:center; gap:8px; width:max-content; margin:0 0 -42px 0; padding:7px 9px; border:1px solid #625e49; background:#171814e8; box-shadow:0 4px 18px #0008; user-select:none; }
+#mapControls label { color:var(--muted); font-size:11px; text-transform:uppercase; } #mapControls input { width:130px; accent-color:var(--accent); } #mapControls output { min-width:38px; color:var(--ink); font-size:11px; } #mapControls button { padding:6px 8px; }
+aside { min-height:0; height:100%; overflow-y:auto; overscroll-behavior:contain; background:var(--panel); border-left:1px solid var(--edge); padding:18px; display:flex; flex-direction:column; gap:16px; scrollbar-color:#5c5947 #202019; }
 .turn { padding:14px; border:1px solid var(--edge); border-left:4px solid var(--faction-color,var(--edge)); background:#202117; }
 .turn strong { font:700 18px system-ui; } .turn small { display:block; color:var(--muted); margin-top:4px; }
 button { border:1px solid #686448; background:#37382a; color:var(--ink); padding:10px 12px; font:700 12px ui-monospace; cursor:pointer; text-transform:uppercase; letter-spacing:.08em; }
@@ -22,4 +27,4 @@ button:hover { background:#4a4b37; } button.primary { background:#9c4b2d; border
 .legend { display:grid; grid-template-columns:auto 1fr; gap:7px 9px; color:var(--muted); font-size:12px; }
 .swatch { width:14px; height:14px; border:2px solid; } .objective { color:#ffdf68; }
 .help { color:var(--muted); font-size:12px; margin-top:auto; } kbd { border:1px solid #555342; padding:1px 4px; background:#26271e; color:#ddd; }
-@media (max-width:850px) { main { grid-template-columns:1fr; } aside { border-left:0; border-top:1px solid var(--edge); } header { align-items:flex-start; } .scale { font-size:11px; } }
+@media (max-width:850px) { body { display:block; overflow:auto; } main { grid-template-columns:1fr; grid-template-rows:65vh auto; height:auto; overflow:visible; } #boardWrap { height:65vh; } aside { height:auto; overflow:visible; border-left:0; border-top:1px solid var(--edge); } header { align-items:flex-start; } .headerTools { align-items:flex-end; flex-direction:column; } .scale { font-size:11px; } }

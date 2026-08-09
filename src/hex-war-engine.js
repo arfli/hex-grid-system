@@ -163,7 +163,7 @@
       ctx.translate(center.x, center.y);
       // Vehicle source images point left (PI radians). Rotate that native
       // heading to the unit's persistent world-space facing direction.
-      ctx.rotate(unit.facing - Math.PI);
+      if (unit.rotateSprite !== false) ctx.rotate(unit.facing - Math.PI);
       this.drawImage(`unit:${unit.image}`, -43, -25, 86, 50, '#333');
       ctx.restore();
       ctx.beginPath();
@@ -248,7 +248,7 @@
       }
       const meters = this.game.scenario.map.metersPerHex;
       const stationary = unit.weapon.stationaryOnly ? ' · stationary fire' : '';
-      this.elements.unitCard.innerHTML = `<b>${unit.id}</b> · ${unit.name}<div class="bar"><i style="width:${100 * unit.health / unit.maxHealth}%"></i></div><div class="statline"><span>Armor integrity</span><span>${unit.health}/${unit.maxHealth}</span><span>Armor strength</span><span>${unit.armor}</span><span>Movement points</span><span>${unit.movementPoints}/${unit.movement}</span><span>Reach remaining</span><span>${unit.movementPoints * meters} m</span><span>Facing</span><span>${this.game.facingName(unit.facing)}</span><span>Weapon</span><span>${unit.weapon.name}</span><span>Effective reach</span><span>${unit.weapon.maxRangeMeters} m</span><span>Crew quality</span><span>${Math.round(unit.crewSkill * 100)}%</span><span>Moved / fired</span><span>${unit.hasMoved ? '✓' : '○'} / ${unit.hasFired ? '✓' : '○'}</span></div><small>${stationary}</small>`;
+      this.elements.unitCard.innerHTML = `<b>${unit.id}</b> · ${unit.name}<div class="bar"><i style="width:${100 * unit.health / unit.maxHealth}%"></i></div><div class="statline"><span>Armor integrity</span><span>${unit.health}/${unit.maxHealth}</span><span>Armor strength</span><span>${unit.armor}</span><span>Movement points</span><span>${this.game.formatPoints(unit.movementPoints)}/${unit.movement}</span><span>Reach remaining</span><span>${Math.round(unit.movementPoints * meters)} m</span><span>Facing</span><span>${this.game.facingName(unit.facing)}</span><span>Weapon</span><span>${unit.weapon.name}</span><span>Effective reach</span><span>${unit.weapon.maxRangeMeters} m</span><span>Crew quality</span><span>${Math.round(unit.crewSkill * 100)}%</span><span>Morale</span><span>${Math.round(unit.morale * 100)}%</span><span>Moved / fired</span><span>${unit.hasMoved ? '✓' : '○'} / ${unit.hasFired ? '✓' : '○'}</span></div><small>${stationary}</small>`;
     }
 
     log(message) {
@@ -304,7 +304,7 @@
     createUnits(definitions, types) {
       return definitions.map(definition => {
         const type = types[definition.type];
-        return { ...definition, ...type, facing:definition.facing ?? 0, crewSkill:definition.crewSkill || 1, health:type.health, maxHealth:type.health, movementPoints:type.movement, hasMoved:false, hasFired:false, reactionFired:false };
+        return { ...definition, ...type, facing:definition.facing ?? 0, crewSkill:definition.crewSkill || 1, morale:definition.morale || 1, health:type.health, maxHealth:type.health, movementPoints:type.movement, hasMoved:false, hasFired:false };
       });
     }
 
@@ -392,32 +392,12 @@
         unit.q = step.q;
         unit.r = step.r;
         unit.movementPoints -= this.movementCost(step);
-        this.resolveReactionFire(unit);
-        if (unit.health <= 0) break;
       }
       unit.hasMoved = true;
       const spent = startingPoints - unit.movementPoints;
       this.ui.log(`${unit.id} spent ${spent} movement point${spent === 1 ? '' : 's'}; ${unit.movementPoints} remain.`);
-      if (unit.health <= 0) this.selected = null;
       this.checkWinner();
       this.update();
-    }
-
-    resolveReactionFire(movingUnit) {
-      const reactors = this.attackableEnemies(movingUnit).filter(unit =>
-        !unit.reactionFired && !(unit.weapon.stationaryOnly && unit.hasMoved)
-      );
-      reactors.forEach(reactor => {
-        if (movingUnit.health <= 0) return;
-        reactor.reactionFired = true;
-        reactor.facing = this.directionAngle(reactor, movingUnit);
-        const modifier = this.scenario.combat?.reactionAccuracyModifier ?? 0.75;
-        this.resolveAttack(reactor, movingUnit, { reaction:true, accuracyModifier:modifier });
-      });
-    }
-
-    attackableEnemies(target) {
-      return this.livingUnits.filter(unit => unit.faction !== target.faction && this.attackableUnits(unit).includes(target));
     }
 
     attack(attacker, target) {
@@ -428,17 +408,16 @@
       this.update();
     }
 
-    resolveAttack(attacker, target, options = {}) {
+    resolveAttack(attacker, target) {
       const distance = this.grid.distance(attacker, target);
       const distanceMeters = distance * this.scenario.map.metersPerHex;
-      const accuracy = this.calculateAccuracy(attacker, target, distanceMeters) * (options.accuracyModifier || 1);
+      const accuracy = this.calculateAccuracy(attacker, target, distanceMeters);
       const hit = this.random() <= accuracy;
       const penetrationMargin = attacker.weapon.penetration - target.armor;
       const penetrated = hit && this.random() <= Math.max(0.2, Math.min(0.9, 0.55 + penetrationMargin * 0.12));
       const damage = penetrated ? Math.max(1, 3 + penetrationMargin + Math.floor(this.random() * 3)) : hit ? 1 : 0;
       const result = !hit ? 'miss' : penetrated ? `PENETRATION for ${damage}` : 'hit, armor held';
-      const prefix = options.reaction ? 'REACTION — ' : '';
-      this.ui.log(`${prefix}${attacker.id} fires at ${target.id} (${distanceMeters} m, ${Math.round(accuracy * 100)}% solution): ${result}.`);
+      this.ui.log(`${attacker.id} fires at ${target.id} (${distanceMeters} m, ${Math.round(accuracy * 100)}% solution): ${result}.`);
       if (hit) { target.health = Math.max(0, target.health - damage); this.showImpact(target); }
       if (!target.health) this.ui.log(`${target.id} destroyed.`);
     }
@@ -456,11 +435,13 @@
       return ['Right', 'Down-right', 'Down-left', 'Left', 'Up-left', 'Up-right'][normalized];
     }
 
+    formatPoints(points) { return Number.isInteger(points) ? points : points.toFixed(1); }
+
     calculateAccuracy(attacker, target, distanceMeters) {
       const weapon = attacker.weapon;
       const environment = this.scenario.environment;
       let accuracy = distanceMeters <= weapon.optimalRangeMeters ? weapon.baseAccuracy : weapon.longRangeAccuracy;
-      accuracy *= attacker.crewSkill;
+      accuracy *= attacker.crewSkill * attacker.morale;
       if (attacker.hasMoved) accuracy *= 0.82;
       if (distanceMeters > environment.crosswindPenaltyBeyondMeters) accuracy *= environment.crosswindAccuracyModifier;
       const targetTerrain = this.scenario.terrainTypes[this.terrainAt(target)];
@@ -486,7 +467,6 @@
       const nextIndex = (currentIndex + 1) % this.scenario.turnOrder.length;
       if (nextIndex === 0) this.turn += 1;
       this.activeFaction = this.scenario.turnOrder[nextIndex];
-      this.units.forEach(unit => { unit.reactionFired = false; });
       this.units.filter(unit => unit.faction === this.activeFaction).forEach(unit => { unit.movementPoints = unit.movement; unit.hasMoved = false; unit.hasFired = false; });
       this.ui.log(`${this.factions[this.activeFaction].name} begins turn ${this.turn}.`);
       this.checkWinner();
@@ -505,5 +485,104 @@
     update() { this.render(); this.ui.update(); }
   }
 
-  global.HexWar = { HexGrid, HexWarGame };
+  class MapViewport {
+    constructor(viewport, canvas, controls) {
+      this.viewport = viewport;
+      this.canvas = canvas;
+      this.slider = controls.slider;
+      this.output = controls.output;
+      this.fitButton = controls.fitButton;
+      this.scale = 1;
+      this.drag = null;
+      this.suppressNextClick = false;
+    }
+
+    start() {
+      this.slider.addEventListener('input', () => this.setZoom(Number(this.slider.value) / 100));
+      this.fitButton.addEventListener('click', () => this.fitMap());
+      this.viewport.addEventListener('pointerdown', event => this.beginPan(event));
+      this.viewport.addEventListener('pointermove', event => this.pan(event));
+      this.viewport.addEventListener('pointerup', event => this.endPan(event));
+      this.viewport.addEventListener('pointercancel', event => this.endPan(event));
+      this.viewport.addEventListener('click', event => this.filterClick(event), true);
+      this.viewport.addEventListener('wheel', event => this.handleWheel(event), { passive:false });
+      this.setZoom(1);
+    }
+
+    beginPan(event) {
+      if (event.button !== 0 || event.target.closest('#mapControls')) return;
+      this.drag = {
+        pointerId:event.pointerId,
+        captureTarget:event.target,
+        startX:event.clientX,
+        startY:event.clientY,
+        scrollLeft:this.viewport.scrollLeft,
+        scrollTop:this.viewport.scrollTop,
+        moved:false
+      };
+      event.target.setPointerCapture?.(event.pointerId);
+    }
+
+    pan(event) {
+      if (!this.drag || event.pointerId !== this.drag.pointerId) return;
+      const deltaX = event.clientX - this.drag.startX;
+      const deltaY = event.clientY - this.drag.startY;
+      if (Math.hypot(deltaX, deltaY) > 5) {
+        this.drag.moved = true;
+        this.viewport.classList.add('is-panning');
+      }
+      if (!this.drag.moved) return;
+      this.viewport.scrollLeft = this.drag.scrollLeft - deltaX;
+      this.viewport.scrollTop = this.drag.scrollTop - deltaY;
+      event.preventDefault();
+    }
+
+    endPan(event) {
+      if (!this.drag || event.pointerId !== this.drag.pointerId) return;
+      if (this.drag.moved) {
+        this.suppressNextClick = true;
+        setTimeout(() => { this.suppressNextClick = false; }, 0);
+      }
+      if (this.drag.captureTarget.hasPointerCapture?.(event.pointerId)) {
+        this.drag.captureTarget.releasePointerCapture(event.pointerId);
+      }
+      this.viewport.classList.remove('is-panning');
+      this.drag = null;
+    }
+
+    filterClick(event) {
+      if (!this.suppressNextClick) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+    }
+
+    setZoom(scale) {
+      const oldScale = this.scale;
+      const contentCenterX = (this.viewport.scrollLeft + this.viewport.clientWidth / 2) / oldScale;
+      const contentCenterY = (this.viewport.scrollTop + this.viewport.clientHeight / 2) / oldScale;
+      this.scale = Math.max(0.35, Math.min(1.4, scale));
+      this.canvas.style.width = `${this.canvas.width * this.scale}px`;
+      this.canvas.style.height = `${this.canvas.height * this.scale}px`;
+      this.slider.value = String(Math.round(this.scale * 100));
+      this.output.value = `${Math.round(this.scale * 100)}%`;
+      this.viewport.scrollLeft = contentCenterX * this.scale - this.viewport.clientWidth / 2;
+      this.viewport.scrollTop = contentCenterY * this.scale - this.viewport.clientHeight / 2;
+    }
+
+    fitMap() {
+      const horizontalScale = (this.viewport.clientWidth - 36) / this.canvas.width;
+      const verticalScale = (this.viewport.clientHeight - 36) / this.canvas.height;
+      this.setZoom(Math.min(horizontalScale, verticalScale, 1));
+      this.viewport.scrollTo({ left:0, top:0, behavior:'smooth' });
+    }
+
+    handleWheel(event) {
+      if (!event.ctrlKey) return;
+      event.preventDefault();
+      const direction = event.deltaY < 0 ? 0.05 : -0.05;
+      this.setZoom(this.scale + direction);
+    }
+  }
+
+  global.HexWar = { HexGrid, HexWarGame, MapViewport };
 }(window));

@@ -14,8 +14,6 @@ window.SCENARIOS.dustLine = {
     crosswindPenaltyBeyondMeters: 2000,
     crosswindAccuracyModifier: 0.92
   },
-  combat: { reactionAccuracyModifier:0.75 },
-
   assets: {
     baseTerrain: 'assets/imgs/hex-desert-terrain.jpg',
     explosion: 'assets/imgs/dmg_explosion.png',

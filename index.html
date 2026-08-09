@@ -9,10 +9,18 @@
 <body>
   <header>
     <div><div id="kicker" class="kicker"></div><h1 id="scenarioTitle"></h1></div>
-    <div id="scale" class="scale"></div>
+    <div class="headerTools"><label for="scenarioPicker">Scenario</label><select id="scenarioPicker"></select><div id="scale" class="scale"></div></div>
   </header>
   <main>
-    <section id="boardWrap"><canvas id="game" aria-label="Hex battlefield"></canvas></section>
+    <section id="boardWrap">
+      <div id="mapControls" aria-label="Map controls">
+        <label for="zoomSlider">Zoom</label>
+        <input id="zoomSlider" type="range" min="35" max="140" value="100" step="5">
+        <output id="zoomValue" for="zoomSlider">100%</output>
+        <button id="fitMap" type="button">Fit map</button>
+      </div>
+      <canvas id="game" aria-label="Hex battlefield"></canvas>
+    </section>
     <aside>
       <div id="turnBox" class="turn"><strong id="turnTitle"></strong><small id="turnSub"></small></div>
       <button id="endTurn" class="primary">End turn</button>
@@ -20,11 +28,12 @@
       <section class="card"><h2>Mission</h2><div id="mission"></div></section>
       <section class="card"><h2>Combat log</h2><div id="log"></div></section>
       <section class="card"><h2>Map key</h2><div id="legend" class="legend"></div></section>
-      <div class="help"><kbd>Click</kbd> a friendly unit, then highlighted hexes to spend movement points. Keep moving while points remain. Entering enemy range can trigger reaction fire. Click a red target to fire.</div>
+      <div class="help"><kbd>Click</kbd> a friendly unit, then highlighted hexes to spend movement points. Keep moving while points remain. Click a red target to fire during your faction's turn.</div>
     </aside>
   </main>
   <script src="src/hex-war-engine.js" defer></script>
   <script src="scenarios/dust-line.js" defer></script>
+  <script src="scenarios/bite-the-dust.js" defer></script>
   <script src="src/main.js" defer></script>
 </body>
 </html>
