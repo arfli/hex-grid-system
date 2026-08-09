@@ -1,0 +1,1 @@
+ 1 hex represents 100 meters
