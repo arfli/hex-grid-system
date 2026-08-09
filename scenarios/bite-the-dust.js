@@ -36,7 +36,13 @@
         abrams:'assets/imgs/abrams.png', bradley:'assets/imgs/bradley.png',
         type99:'assets/imgs/Type_99CN.png', zbd04:'assets/imgs/ZBD04CN.png',
         irgc:'assets/svg/irgc-infantry.svg', volunteers:'assets/svg/volunteers.svg'
-      }
+      },
+      effects:{ apache:'assets/imgs/apaches_flying_in_formation.png' }
+    },
+
+    airSupport:{
+      id:'apache-cas', faction:'US', turn:3, image:'apache', durationMs:6500,
+      strikes:3, baseHitChance:0.76, airDefenseModifier:0.62, minimumDamage:4, maximumDamage:7
     },
 
     factions: {
@@ -44,6 +50,10 @@
       COALITION: { name:'Chinese–Iranian Alliance', victoryName:'ALLIANCE', color:'#d94b42', turnMessage:'Hold the Ahvaz defensive belt and bleed the spearhead.' }
     },
     turnOrder:['US', 'COALITION'],
+    ai: {
+      US:{ strategy:'breakthrough', goalColumn:45 },
+      COALITION:{ strategy:'defensive-fire' }
+    },
 
     terrainTypes: {
       field:{ label:'Irrigated field', movementCost:1.2, defense:0 },
@@ -102,7 +112,43 @@
       place('VOL-3','COALITION','volunteers',40,24,{ crewSkill:0.74, morale:1.06, facing:Math.PI })
     ],
 
-    missionHtml:'Scale: one counter is one vehicle or infantry position; one hex is 100 m.<br><br><b>USA:</b> breach the eastern defensive line. At 50% aggregate starting strength, the regiment withdraws.<br><br><b>Alliance:</b> prevent a breach and reduce the U.S. spearhead to half strength.',
+    intro:{
+      title:'Operation Bite the Dust',
+      characterDelay:14,
+      paragraphs:[
+        'FICTIONAL NEAR-FUTURE SCENARIO.',
+        'Tension between the United States and Iran has reached breaking point over control and security in the Strait of Hormuz. With maritime pressure failing to force Tehran to surrender, Washington authorizes a daring and tightly concealed land campaign.',
+        'To avoid the delay and visibility of a major military buildup, a regiment-sized U.S. armored force crosses from the Iraqi frontier. Its mission is audacious: seize the oil-rich province of Khuzestan, secure its capital at Ahvaz, and confront the Iranian government with a rapid strategic defeat.',
+        'The advance from the border is unexpectedly swift. Coordinated missile strikes tear into strategic positions, communications sites, and approach routes. American commanders begin to believe that speed and surprise have broken organized resistance.',
+        'Then the spearhead reaches the western outskirts of Ahvaz.',
+        'Beyond the dust and damaged highway, new silhouettes wait in prepared positions. Chinese armor, Iranian Revolutionary Guard troops, and local volunteers have formed a joint defensive alliance around the city.',
+        'The road to Ahvaz is no longer open. The battle for Khuzestan begins here.'
+      ]
+    },
+
+    briefing:{
+      dateLine:'Fictional near-future scenario · Ahvaz approaches',
+      situation:'After a rapid U.S. drive into Khuzestan meets little resistance, its lead armored regiment reaches the western outskirts of Ahvaz. Missile strikes have damaged the approach corridor, but a concealed Chinese–Iranian defensive belt remains operational. The U.S. formation has superior machinery but brittle morale and must break through before losses force withdrawal.',
+      sides:{
+        US:'Command the armored spearhead. Preserve strength, cross the canal, and penetrate the eastern defensive belt before aggregate strength falls to 50%. An Apache formation arrives on turn 3 to provide CAS-guided precision strikes, but coalition air defenses reduce—and randomize—the chance of hitting each target.',
+        COALITION:'Command the combined defense. Use Chinese armor, prepared IRGC positions, and volunteers to hold the line or reduce the U.S. spearhead to half strength.'
+      }
+    },
+
+    outcomes:{
+      US:{
+        headline:'The Ahvaz line is breached',
+        next:'The spearhead establishes a narrow lodgment on the urban edge, but the regiment is too small to secure the entire city. Iranian forces prepare counterattacks while U.S. commanders face an immediate choice between reinforcement, consolidation, or withdrawal.',
+        internationalReaction:'Washington publicly protests the revelation of a previously undisclosed Chinese–Iranian military alliance, arguing that Beijing secretly expanded the conflict and endangered U.S. forces. Beijing rejects the accusation and describes its involvement as international solidarity against war, invasion, and imperialism. Chinese diplomats call for recognition of Iran’s sovereignty, territorial borders, and government, while demanding an immediate U.S. withdrawal. Regional governments press for a ceasefire, energy markets react sharply, and humanitarian agencies warn that further fighting around Ahvaz could displace civilians. Whether the tactical breach can produce Iranian surrender remains deeply uncertain.'
+      },
+      COALITION:{
+        headline:'The spearhead breaks against Ahvaz',
+        next:'With half its combat strength lost or disabled, the U.S. regiment abandons the assault and falls back toward its supply corridor. The alliance retains the approaches and portrays the defense as proof that the wider campaign has stalled.',
+        internationalReaction:'Washington condemns the previously undisclosed Chinese–Iranian military alliance and claims that covert Chinese participation transformed a limited campaign into a wider international confrontation. Beijing answers that the defense of Ahvaz represents international solidarity against war, invasion, and imperialism. It calls on other governments to defend Iran’s sovereignty, territorial borders, and recognized government and demands the complete withdrawal of U.S. forces. Iran and China celebrate the defensive victory, while U.S. partners call for an investigation and rapid de-escalation. International mediators seek talks before either side introduces larger formations.'
+      }
+    },
+
+    missionHtml:'Scale: one counter is one vehicle or infantry position; one hex is 100 m.<br><br><b>USA:</b> breach the eastern defensive line. At 50% aggregate starting strength, the regiment withdraws. Apache CAS arrives on turn 3, subject to coalition air defenses.<br><br><b>Alliance:</b> prevent a breach and reduce the U.S. spearhead to half strength.',
     openingLog:['Missile impacts walk across the Ahvaz highway—but the defense remains intact.','Unexpected contact: Chinese armor and Iranian prepared positions ahead.','U.S. cohesion is fragile. A 50% strength loss will force withdrawal.'],
 
     determineWinner(game) {

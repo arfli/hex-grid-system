@@ -26,6 +26,10 @@ window.SCENARIOS.dustLine = {
     ISRAEL: { name:'Israel', victoryName:'ISRAEL', color:'#f0cf5b', turnMessage:'Hold the objectives and blunt the advance.' }
   },
   turnOrder: ['US', 'ISRAEL'],
+  ai: {
+    US:{ strategy:'breakthrough' },
+    ISRAEL:{ strategy:'defensive-fire' }
+  },
 
   terrainTypes: {
     crater: { label:'Crater', movementCost:2, defense:0 },
@@ -67,6 +71,20 @@ window.SCENARIOS.dustLine = {
     { id:'CEDAR-4', faction:'ISRAEL', type:'merkava', q:31, r:22, crewSkill:0.96, facing:Math.PI },
     { id:'CEDAR-5', faction:'ISRAEL', type:'merkava', q:29, r:26, crewSkill:0.94, facing:Math.PI }
   ],
+
+  briefing:{
+    dateLine:'Fictional tactical exercise · desert corridor',
+    situation:'A U.S. armored element attempts to seize two key desert junctions while an Israeli Merkava force blocks the corridor. Control both objectives before the turn limit or destroy the opposing force.',
+    sides:{
+      US:'Use Abrams firepower and Bradley mobility to seize the Relay Station and Wadi Crossing.',
+      ISRAEL:'Use the defensive depth of the Merkava force to retain at least one objective and stop the U.S. advance.'
+    }
+  },
+
+  outcomes:{
+    US:{ headline:'The corridor is secured', next:'The U.S. force consolidates both junctions and opens the route for follow-on elements.', internationalReaction:'Because this is a fictional bilateral exercise scenario, outside governments call for immediate de-escalation and clarification while defense observers study the unexpected engagement.' },
+    ISRAEL:{ headline:'The defensive line holds', next:'The U.S. element disengages after failing to secure the corridor, leaving Israeli forces in control of the key junctions.', internationalReaction:'Because this is a fictional bilateral exercise scenario, allies demand an inquiry and urgent talks to prevent the tactical clash from becoming a wider political crisis.' }
+  },
 
   missionHtml: 'Scale: one counter is one vehicle; one hex is 100 m.<br><br>USA: control both objectives by the end of turn 12.<br><br>Israel: hold either objective or destroy the U.S. force.',
   openingLog: ['Two objectives identified: Relay Station and Wadi Crossing.', 'Contact! U.S. armor enters the western corridor.'],

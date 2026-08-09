@@ -72,6 +72,7 @@
       this.load('explosion', assetConfig.explosion);
       Object.entries(assetConfig.terrain || {}).forEach(([id, path]) => this.load(`terrain:${id}`, path));
       Object.entries(assetConfig.units || {}).forEach(([id, path]) => this.load(`unit:${id}`, path));
+      Object.entries(assetConfig.effects || {}).forEach(([id, path]) => this.load(`effect:${id}`, path));
     }
 
     load(id, path) {
@@ -99,6 +100,7 @@
       this.game.livingUnits.forEach(unit => this.drawUnit(unit));
       this.drawTargets();
       this.drawImpacts();
+      this.drawAirMissions();
     }
 
     hexPath(cell) {
@@ -210,12 +212,115 @@
         this.context.restore();
       });
     }
+
+    drawAirMissions() {
+      const now = performance.now();
+      this.game.airMissions.forEach(mission => {
+        const progress = Math.max(0, Math.min(1, (now - mission.startedAt) / mission.duration));
+        const width = 270;
+        const height = 214;
+        const x = -width + progress * (this.canvas.width + width * 2);
+        const y = mission.y + Math.sin(progress * Math.PI * 2) * 16;
+        this.context.save();
+        this.context.globalAlpha = Math.min(1, progress * 8, (1 - progress) * 8);
+        this.drawImage(`effect:${mission.image}`, x, y, width, height);
+        this.context.restore();
+      });
+    }
+  }
+
+  class StoryIntro {
+    constructor(root) {
+      this.root = root;
+      this.title = root.querySelector('#storyIntroTitle');
+      this.text = root.querySelector('#storyText');
+      this.status = root.querySelector('#storyStatus');
+      this.control = root.querySelector('#storyControl');
+      this.timer = null;
+      this.typing = false;
+    }
+
+    play({ title, paragraphs, characterDelay = 16 }) {
+      const fullText = paragraphs.join('\n\n');
+      this.title.textContent = title;
+      this.text.textContent = '';
+      this.status.textContent = 'TRANSMISSION';
+      this.control.textContent = 'Skip transmission';
+      this.root.hidden = false;
+      this.control.focus();
+
+      return new Promise(resolve => {
+        let index = 0;
+        const completeTyping = () => {
+          clearTimeout(this.timer);
+          this.typing = false;
+          this.text.textContent = fullText;
+          this.text.scrollTop = 0;
+          this.status.textContent = 'TRANSMISSION COMPLETE';
+          this.control.textContent = 'Continue to briefing';
+        };
+        const close = () => {
+          clearTimeout(this.timer);
+          this.root.hidden = true;
+          document.removeEventListener('keydown', onKeyDown);
+          resolve();
+        };
+        const onControl = () => this.typing ? completeTyping() : close();
+        const onKeyDown = event => {
+          if (event.key === 'Escape') this.typing ? completeTyping() : close();
+        };
+        const typeNext = () => {
+          if (!this.typing) return;
+          index += 1;
+          this.text.textContent = fullText.slice(0, index);
+          this.text.scrollTop = this.text.scrollHeight;
+          if (index >= fullText.length) { completeTyping(); return; }
+          const current = fullText[index - 1];
+          const pause = current === '.' ? characterDelay * 7 : current === '\n' ? characterDelay * 4 : characterDelay;
+          this.timer = setTimeout(typeNext, pause);
+        };
+
+        this.control.onclick = onControl;
+        document.addEventListener('keydown', onKeyDown);
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) completeTyping();
+        else { this.typing = true; typeNext(); }
+      });
+    }
+  }
+
+  class ModalDialog {
+    constructor(root) {
+      this.root = root;
+      this.eyebrow = root.querySelector('#dialogEyebrow');
+      this.title = root.querySelector('#dialogTitle');
+      this.body = root.querySelector('#dialogBody');
+      this.actions = root.querySelector('#dialogActions');
+    }
+
+    show({ eyebrow = '', title, bodyHtml, actions = [] }) {
+      this.eyebrow.textContent = eyebrow;
+      this.title.textContent = title;
+      this.body.innerHTML = bodyHtml;
+      this.actions.replaceChildren();
+      actions.forEach(action => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.textContent = action.label;
+        if (action.primary) button.classList.add('primary');
+        button.addEventListener('click', action.onClick);
+        this.actions.append(button);
+      });
+      this.root.hidden = false;
+      this.actions.querySelector('button')?.focus();
+    }
+
+    hide() { this.root.hidden = true; }
   }
 
   class GameUI {
     constructor(game) {
       this.game = game;
-      this.elements = Object.fromEntries(['kicker','scenarioTitle','scale','turnBox','turnTitle','turnSub','unitCard','mission','legend','log'].map(id => [id, document.getElementById(id)]));
+      this.elements = Object.fromEntries(['kicker','scenarioTitle','scale','turnBox','turnTitle','turnSub','unitCard','mission','legend','log','endTurn'].map(id => [id, document.getElementById(id)]));
     }
 
     initialize() {
@@ -234,8 +339,9 @@
       this.elements.turnBox.style.setProperty('--faction-color', faction.color);
       if (!game.gameOver) {
         this.elements.turnTitle.textContent = `${faction.name.toUpperCase()} TURN ${game.turn}`;
-        this.elements.turnSub.textContent = faction.turnMessage;
+        this.elements.turnSub.textContent = faction.turnMessage + (game.cinematicRunning ? ' Air support operation in progress…' : game.aiRunning ? ' AI is issuing orders…' : '');
       }
+      this.elements.endTurn.disabled = game.aiRunning || game.cinematicRunning || game.gameOver;
       this.updateUnitCard();
     }
 
@@ -261,7 +367,114 @@
     showWinner(factionId, message) {
       this.elements.turnTitle.textContent = `${this.game.factions[factionId].victoryName} VICTORY`;
       this.elements.turnSub.textContent = message;
+      this.showOutcome(factionId);
     }
+
+    showOutcome(winnerId) {
+      if (!this.game.dialog) return;
+      const scenario = this.game.scenario;
+      const loserId = scenario.turnOrder.find(id => id !== winnerId);
+      const outcome = scenario.outcomes?.[winnerId];
+      const winner = this.game.factions[winnerId];
+      const loser = this.game.factions[loserId];
+      const body = outcome ? `<p><b>${winner.name} wins.</b> ${loser.name} loses.</p><h3>Immediate aftermath</h3><p>${outcome.next}</p><h3>International reaction — speculative</h3><p>${outcome.internationalReaction}</p>` : `<p><b>${winner.name} wins.</b> ${loser.name} loses.</p>`;
+      this.game.dialog.show({
+        eyebrow:'Scenario complete · fictional outcome',
+        title:outcome?.headline || `${winner.victoryName} victory`,
+        bodyHtml:body,
+        actions:[
+          { label:'Play again', primary:true, onClick:() => window.location.reload() },
+          { label:'Choose another side', onClick:() => { const url = new URL(window.location.href); url.searchParams.delete('side'); window.location.href = url.toString(); } }
+        ]
+      });
+    }
+  }
+
+  class TacticalAI {
+    constructor(game) { this.game = game; }
+
+    async takeTurn() {
+      const game = this.game;
+      const faction = game.activeFaction;
+      const config = game.scenario.ai?.[faction] || { strategy:'defensive-fire' };
+      const units = game.livingUnits.filter(unit => unit.faction === faction);
+      game.ui.log(`${game.factions[faction].name} AI begins issuing orders.`);
+
+      for (const unit of units) {
+        if (game.gameOver) return;
+        if (config.strategy === 'breakthrough') await this.useBreakthroughUnit(unit, config);
+        else await this.useDefensiveUnit(unit);
+      }
+
+      if (game.gameOver) return;
+      await this.pause(350);
+      game.aiRunning = false;
+      game.endTurn(true);
+    }
+
+    async useDefensiveUnit(unit) {
+      const target = this.chooseTarget(unit);
+      if (!target) return;
+      this.game.attack(unit, target);
+      await this.pause(260);
+    }
+
+    async useBreakthroughUnit(unit, config) {
+      let target = this.chooseTarget(unit);
+      if (target) {
+        this.game.attack(unit, target);
+        await this.pause(220);
+        if (this.game.gameOver) return;
+      }
+
+      const mustRemainStationary = unit.weapon.stationaryOnly && unit.hasFired;
+      if (unit.health > 0 && unit.movementPoints > 0 && !mustRemainStationary) {
+        const destination = this.chooseAdvanceCell(unit, config);
+        if (destination) {
+          this.game.selected = unit;
+          this.game.move(unit, destination);
+          await this.pause(260);
+          if (this.game.gameOver) return;
+        }
+      }
+
+      if (!unit.hasFired && unit.health > 0) {
+        target = this.chooseTarget(unit);
+        if (target && !(unit.weapon.stationaryOnly && unit.hasMoved)) {
+          this.game.attack(unit, target);
+          await this.pause(220);
+        }
+      }
+    }
+
+    chooseTarget(attacker) {
+      const candidates = this.game.attackableUnits(attacker);
+      return candidates.sort((a, b) => this.targetScore(attacker, b) - this.targetScore(attacker, a))[0] || null;
+    }
+
+    targetScore(attacker, target) {
+      const distanceMeters = this.game.grid.distance(attacker, target) * this.game.scenario.map.metersPerHex;
+      const accuracy = this.game.calculateAccuracy(attacker, target, distanceMeters);
+      const vulnerability = Math.max(1, attacker.weapon.penetration - target.armor + 3);
+      const damagePriority = 1 - target.health / target.maxHealth;
+      return accuracy * vulnerability + damagePriority * 2;
+    }
+
+    chooseAdvanceCell(unit, config) {
+      const nodes = [...this.game.buildMovementMap(unit).values()].filter(node => node.cost > 0);
+      if (!nodes.length) return null;
+      const objectives = this.game.objectives;
+      const score = node => {
+        const column = node.cell.q + Math.floor(node.cell.r / 2);
+        if (Number.isFinite(config.goalColumn)) return column * 100 - node.cost;
+        const objectiveDistance = Math.min(...objectives.map(objective => this.game.grid.distance(node.cell, objective)));
+        return -objectiveDistance * 100 - node.cost;
+      };
+      nodes.sort((a, b) => score(b) - score(a));
+      return nodes[0].cell;
+    }
+
+    pause(milliseconds) { return new Promise(resolve => setTimeout(resolve, milliseconds)); }
   }
 
   class HexWarGame {
@@ -269,6 +482,8 @@
       this.canvas = canvas;
       this.scenario = scenario;
       this.random = options.random || Math.random;
+      this.playerFaction = options.playerFaction || scenario.turnOrder[0];
+      this.dialog = options.dialog || null;
       this.grid = new HexGrid(scenario.map);
       this.factions = scenario.factions;
       this.objectives = scenario.objectives.map(item => ({ ...item }));
@@ -278,11 +493,16 @@
       this.turn = 1;
       this.selected = null;
       this.gameOver = false;
+      this.aiRunning = false;
+      this.cinematicRunning = false;
+      this.triggeredEvents = new Set();
+      this.airMissions = [];
       this.impacts = [];
       this.impactDuration = 900;
       this.assets = new AssetStore(scenario.assets, () => this.render());
       this.renderer = new BattlefieldRenderer(canvas, this);
       this.ui = new GameUI(this);
+      this.ai = new TacticalAI(this);
     }
 
     start() {
@@ -293,6 +513,7 @@
       document.getElementById('endTurn').addEventListener('click', () => this.endTurn());
       this.scenario.openingLog.forEach(message => this.ui.log(message));
       this.update();
+      this.scheduleAITurn();
     }
 
     createTerrainMap(groups) {
@@ -365,7 +586,7 @@
     }
 
     handleClick(event) {
-      if (this.gameOver) return;
+      if (this.gameOver || this.aiRunning || this.cinematicRunning || this.activeFaction !== this.playerFaction) return;
       const bounds = this.canvas.getBoundingClientRect();
       const cell = this.grid.closestCell((event.clientX - bounds.left) * this.canvas.width / bounds.width, (event.clientY - bounds.top) * this.canvas.height / bounds.height);
       if (!cell) return;
@@ -401,6 +622,8 @@
     }
 
     attack(attacker, target) {
+      if (attacker.hasFired || attacker.health <= 0 || target.health <= 0) return;
+      if (attacker.weapon.stationaryOnly && attacker.hasMoved) return;
       attacker.hasFired = true;
       attacker.facing = this.directionAngle(attacker, target);
       this.resolveAttack(attacker, target);
@@ -449,8 +672,10 @@
       return Math.max(0.05, Math.min(0.95, accuracy));
     }
 
-    showImpact(unit) {
-      this.impacts.push({ q:unit.q, r:unit.r, startedAt:performance.now() });
+    showImpact(unit) { this.showImpactAt(unit); }
+
+    showImpactAt(position) {
+      this.impacts.push({ q:position.q, r:position.r, startedAt:performance.now() });
       requestAnimationFrame(time => this.animateImpacts(time));
     }
 
@@ -460,8 +685,8 @@
       if (this.impacts.length) requestAnimationFrame(nextTime => this.animateImpacts(nextTime));
     }
 
-    endTurn() {
-      if (this.gameOver) return;
+    endTurn(fromAI = false) {
+      if (this.gameOver || this.cinematicRunning || (this.aiRunning && !fromAI)) return;
       this.selected = null;
       const currentIndex = this.scenario.turnOrder.indexOf(this.activeFaction);
       const nextIndex = (currentIndex + 1) % this.scenario.turnOrder.length;
@@ -470,7 +695,86 @@
       this.units.filter(unit => unit.faction === this.activeFaction).forEach(unit => { unit.movementPoints = unit.movement; unit.hasMoved = false; unit.hasFired = false; });
       this.ui.log(`${this.factions[this.activeFaction].name} begins turn ${this.turn}.`);
       this.checkWinner();
+      const eventStarted = !this.gameOver && this.triggerTurnEvent();
       this.update();
+      if (!eventStarted) this.scheduleAITurn();
+    }
+
+    triggerTurnEvent() {
+      const support = this.scenario.airSupport;
+      if (!support || this.triggeredEvents.has(support.id)) return false;
+      if (this.activeFaction !== support.faction || this.turn !== support.turn) return false;
+      const launched = this.launchAirSupport(support);
+      if (launched) this.triggeredEvents.add(support.id);
+      return launched;
+    }
+
+    launchAirSupport(config) {
+      const enemies = this.livingUnits.filter(unit => unit.faction !== config.faction);
+      const targets = [...enemies].sort(() => this.random() - 0.5).slice(0, Math.min(config.strikes, enemies.length));
+      if (!targets.length) return false;
+      const averageY = targets.reduce((sum, target) => sum + this.grid.toPixel(target).y, 0) / targets.length;
+      const mission = {
+        image:config.image,
+        startedAt:performance.now(),
+        duration:config.durationMs,
+        y:Math.max(35, Math.min(this.canvas.height - 250, averageY - 107)),
+        config,
+        strikes:targets.map(target => ({ target, resolved:false, triggerX:this.grid.toPixel(target).x }))
+      };
+      this.cinematicRunning = true;
+      this.airMissions.push(mission);
+      this.ui.log(`Turn ${this.turn}: Apache formation enters from the west. Coalition air defenses are active.`);
+      this.update();
+      requestAnimationFrame(time => this.animateAirSupport(mission, time));
+      return true;
+    }
+
+    animateAirSupport(mission, now) {
+      const progress = Math.max(0, Math.min(1, (now - mission.startedAt) / mission.duration));
+      const formationCenterX = -135 + progress * (this.canvas.width + 540);
+      mission.strikes.forEach(strike => {
+        if (!strike.resolved && formationCenterX >= strike.triggerX) this.resolveAirStrike(strike, mission.config);
+      });
+      this.render();
+      if (progress < 1) {
+        requestAnimationFrame(time => this.animateAirSupport(mission, time));
+        return;
+      }
+      mission.strikes.filter(strike => !strike.resolved).forEach(strike => this.resolveAirStrike(strike, mission.config));
+      this.airMissions = this.airMissions.filter(item => item !== mission);
+      this.cinematicRunning = false;
+      this.checkWinner();
+      this.update();
+      this.scheduleAITurn();
+    }
+
+    resolveAirStrike(strike, config) {
+      strike.resolved = true;
+      const target = strike.target;
+      if (target.health <= 0) return;
+      const hitChance = Math.max(0.05, Math.min(0.95, config.baseHitChance * config.airDefenseModifier));
+      const hit = this.random() <= hitChance;
+      if (hit) {
+        const damageRange = config.maximumDamage - config.minimumDamage + 1;
+        const damage = config.minimumDamage + Math.floor(this.random() * damageRange);
+        target.health = Math.max(0, target.health - damage);
+        this.showImpact(target);
+        this.ui.log(`CAS strike hits ${target.id} (${Math.round(hitChance * 100)}% adjusted chance) for ${damage} damage.`);
+        if (!target.health) this.ui.log(`${target.id} destroyed by precision air attack.`);
+      } else {
+        const nearby = this.grid.neighbors(target);
+        const miss = nearby[Math.floor(this.random() * nearby.length)] || target;
+        this.showImpactAt(miss);
+        this.ui.log(`CAS strike misses ${target.id}; air defenses disrupt the attack (${Math.round(hitChance * 100)}% adjusted chance).`);
+      }
+    }
+
+    scheduleAITurn() {
+      if (this.gameOver || this.cinematicRunning || this.activeFaction === this.playerFaction || this.aiRunning) return;
+      this.aiRunning = true;
+      this.update();
+      setTimeout(() => this.ai.takeTurn(), 450);
     }
 
     checkWinner() {
@@ -584,5 +888,5 @@
     }
   }
 
-  global.HexWar = { HexGrid, HexWarGame, MapViewport };
+  global.HexWar = { HexGrid, HexWarGame, TacticalAI, MapViewport, ModalDialog, StoryIntro };
 }(window));

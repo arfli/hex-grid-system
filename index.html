@@ -9,7 +9,7 @@
 <body>
   <header>
     <div><div id="kicker" class="kicker"></div><h1 id="scenarioTitle"></h1></div>
-    <div class="headerTools"><label for="scenarioPicker">Scenario</label><select id="scenarioPicker"></select><div id="scale" class="scale"></div></div>
+    <div class="headerTools"><label for="scenarioPicker">Scenario</label><select id="scenarioPicker"></select><label for="sidePicker">Play as</label><select id="sidePicker"></select><div id="scale" class="scale"></div></div>
   </header>
   <main>
     <section id="boardWrap">
@@ -30,7 +30,23 @@
       <section class="card"><h2>Map key</h2><div id="legend" class="legend"></div></section>
       <div class="help"><kbd>Click</kbd> a friendly unit, then highlighted hexes to spend movement points. Keep moving while points remain. Click a red target to fire during your faction's turn.</div>
     </aside>
-  </main>
+</main>
+<div id="storyIntro" class="storyIntro" role="dialog" aria-modal="true" aria-labelledby="storyIntroTitle" hidden>
+  <div class="storyFrame">
+    <div class="storyHeader"><span>STRATEGIC SITUATION</span><span id="storyStatus">TRANSMISSION</span></div>
+    <h2 id="storyIntroTitle"></h2>
+    <div id="storyText" class="storyText" aria-live="polite"></div>
+    <button id="storyControl" type="button">Skip transmission</button>
+  </div>
+</div>
+<div id="dialog" class="dialog" role="dialog" aria-modal="true" aria-labelledby="dialogTitle" hidden>
+  <div class="dialogPanel">
+    <div id="dialogEyebrow" class="dialogEyebrow"></div>
+    <h2 id="dialogTitle"></h2>
+    <div id="dialogBody" class="dialogBody"></div>
+    <div id="dialogActions" class="dialogActions"></div>
+  </div>
+</div>
   <script src="src/hex-war-engine.js" defer></script>
   <script src="scenarios/dust-line.js" defer></script>
   <script src="scenarios/bite-the-dust.js" defer></script>

@@ -15,6 +15,15 @@ Weapon ranges are stored in meters and converted to hexes by the engine. A weapo
 
 `movement` is a per-turn movement-point allowance. Terrain consumes its configured `movementCost`, and units may move repeatedly until their points are gone.
 
+## Single-player AI
+
+Each faction may select a reusable strategy under `scenario.ai`:
+
+- `defensive-fire` holds position and prioritizes vulnerable, high-value targets in range.
+- `breakthrough` fires when useful and spends movement points toward objectives or a configured `goalColumn`.
+
+The human-controlled faction is passed to `HexWarGame` as `playerFaction`. AI timing and turn ownership are handled by `TacticalAI`; scenario files only choose strategies and goals.
+
 ## Extension points
 
 - Add reusable rules to `HexWarGame`, not to a scenario file.
