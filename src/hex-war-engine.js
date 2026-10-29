@@ -137,7 +137,7 @@
       if (!this.cachedTerrainCanvas || this.cachedTerrainCanvas.width !== w || this.cachedTerrainCanvas.height !== h) {
         this.cachedTerrainCanvas = this.createOffscreenCanvas(w, h);
       }
-      if (!this.cachedTerrainCanvas) return;
+      if (!this.cachedTerrainCanvas || typeof this.cachedTerrainCanvas.getContext !== 'function') return;
       const ctx = this.cachedTerrainCanvas.getContext('2d');
       if (!ctx) return;
       ctx.clearRect(0, 0, w, h);

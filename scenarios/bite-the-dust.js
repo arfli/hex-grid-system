@@ -42,6 +42,7 @@
 
     airSupport:{
       id:'apache-cas', faction:'US', turn:3, image:'apache', durationMs:6500,
+      weapons:['hellfire_atgm', 'm230_30'],
       strikes:3, baseHitChance:0.76, airDefenseModifier:0.62, minimumDamage:4, maximumDamage:7
     },
 
@@ -81,12 +82,12 @@
     ],
 
     unitTypes: {
-      abrams:{ name:'M1A1 Abrams Platoon', image:'abrams', health:12, armor:10, movement:5, weapon:{ name:'120 mm M256', maxRangeMeters:3000, optimalRangeMeters:2000, baseAccuracy:0.84, longRangeAccuracy:0.60, penetration:11 } },
-      bradley:{ name:'M2 Bradley Mech Platoon', image:'bradley', health:7, armor:5, movement:6, weapon:{ name:'BGM-71 TOW', maxRangeMeters:3750, optimalRangeMeters:2500, baseAccuracy:0.80, longRangeAccuracy:0.61, penetration:10, stationaryOnly:true } },
-      type99:{ name:'ZTZ-99 MBT Platoon', image:'type99', health:12, armor:10, movement:5, weapon:{ name:'125 mm smoothbore', maxRangeMeters:3000, optimalRangeMeters:2000, baseAccuracy:0.79, longRangeAccuracy:0.56, penetration:11 } },
-      zbd04:{ name:'ZBD-04 IFV Platoon', image:'zbd04', health:8, armor:6, movement:6, weapon:{ name:'100 mm gun / ATGM', maxRangeMeters:4000, optimalRangeMeters:2200, baseAccuracy:0.74, longRangeAccuracy:0.52, penetration:9 } },
-      irgc:{ name:'IRGC Fortified ATGM Platoon', image:'irgc', health:8, armor:4, movement:0, rotateSprite:false, weapon:{ name:'ATGM network', maxRangeMeters:2500, optimalRangeMeters:1600, baseAccuracy:0.68, longRangeAccuracy:0.43, penetration:9, stationaryOnly:true } },
-      volunteers:{ name:'Iranian Volunteer Platoon', image:'volunteers', health:5, armor:2, movement:0, rotateSprite:false, weapon:{ name:'Rifle / RPG concentration', maxRangeMeters:600, optimalRangeMeters:300, baseAccuracy:0.52, longRangeAccuracy:0.27, penetration:6, stationaryOnly:true } }
+      abrams:{ name:'M1A1 Abrams Platoon', image:'abrams', health:12, armor:10, movement:5, weapons:['m256_120', 'm240_coax'], weapon:{ name:'120 mm M256', maxRangeMeters:3000, optimalRangeMeters:2000, baseAccuracy:0.84, longRangeAccuracy:0.60, penetration:11 } },
+      bradley:{ name:'M2 Bradley Mech Platoon', image:'bradley', health:7, armor:5, movement:6, weapons:['tow_2b', 'm242_25'], weapon:{ name:'BGM-71 TOW', maxRangeMeters:3750, optimalRangeMeters:2500, baseAccuracy:0.80, longRangeAccuracy:0.61, penetration:10, stationaryOnly:true } },
+      type99:{ name:'ZTZ-99 MBT Platoon', image:'type99', health:12, armor:10, movement:5, weapons:['zpt98_125', 'type86_coax'], weapon:{ name:'125 mm smoothbore', maxRangeMeters:3000, optimalRangeMeters:2000, baseAccuracy:0.79, longRangeAccuracy:0.56, penetration:11 } },
+      zbd04:{ name:'ZBD-04 IFV Platoon', image:'zbd04', health:8, armor:6, movement:6, weapons:['type03_100', 'type02_30'], weapon:{ name:'100 mm gun / ATGM', maxRangeMeters:4000, optimalRangeMeters:2200, baseAccuracy:0.74, longRangeAccuracy:0.52, penetration:9 } },
+      irgc:{ name:'IRGC Fortified ATGM Platoon', image:'irgc', health:8, armor:4, movement:0, rotateSprite:false, weapons:['dehlavieh_atgm', 'pkm_mg'], weapon:{ name:'ATGM network', maxRangeMeters:2500, optimalRangeMeters:1600, baseAccuracy:0.68, longRangeAccuracy:0.43, penetration:9, stationaryOnly:true } },
+      volunteers:{ name:'Iranian Volunteer Platoon', image:'volunteers', health:5, armor:2, movement:0, rotateSprite:false, weapons:['rpg_launcher', 'type56_akm'], weapon:{ name:'Rifle / RPG concentration', maxRangeMeters:600, optimalRangeMeters:300, baseAccuracy:0.52, longRangeAccuracy:0.27, penetration:6, stationaryOnly:true } }
     },
 
     units: [
