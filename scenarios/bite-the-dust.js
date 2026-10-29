@@ -81,12 +81,12 @@
     ],
 
     unitTypes: {
-      abrams:{ name:'M1A1 Abrams', image:'abrams', health:12, armor:10, movement:5, weapon:{ name:'120 mm M256', maxRangeMeters:3000, optimalRangeMeters:2000, baseAccuracy:0.84, longRangeAccuracy:0.60, penetration:11 } },
-      bradley:{ name:'M2 Bradley', image:'bradley', health:7, armor:5, movement:6, weapon:{ name:'BGM-71 TOW', maxRangeMeters:3750, optimalRangeMeters:2500, baseAccuracy:0.80, longRangeAccuracy:0.61, penetration:10, stationaryOnly:true } },
-      type99:{ name:'ZTZ-99 MBT', image:'type99', health:12, armor:10, movement:5, weapon:{ name:'125 mm smoothbore', maxRangeMeters:3000, optimalRangeMeters:2000, baseAccuracy:0.79, longRangeAccuracy:0.56, penetration:11 } },
-      zbd04:{ name:'ZBD-04 IFV', image:'zbd04', health:8, armor:6, movement:6, weapon:{ name:'100 mm gun / ATGM', maxRangeMeters:4000, optimalRangeMeters:2200, baseAccuracy:0.74, longRangeAccuracy:0.52, penetration:9 } },
-      irgc:{ name:'IRGC fortified infantry', image:'irgc', health:8, armor:4, movement:0, rotateSprite:false, weapon:{ name:'ATGM team', maxRangeMeters:2500, optimalRangeMeters:1600, baseAccuracy:0.68, longRangeAccuracy:0.43, penetration:9, stationaryOnly:true } },
-      volunteers:{ name:'Iranian volunteers', image:'volunteers', health:5, armor:2, movement:0, rotateSprite:false, weapon:{ name:'Rifle / RPG team', maxRangeMeters:600, optimalRangeMeters:300, baseAccuracy:0.52, longRangeAccuracy:0.27, penetration:6, stationaryOnly:true } }
+      abrams:{ name:'M1A1 Abrams Platoon', image:'abrams', health:12, armor:10, movement:5, weapon:{ name:'120 mm M256', maxRangeMeters:3000, optimalRangeMeters:2000, baseAccuracy:0.84, longRangeAccuracy:0.60, penetration:11 } },
+      bradley:{ name:'M2 Bradley Mech Platoon', image:'bradley', health:7, armor:5, movement:6, weapon:{ name:'BGM-71 TOW', maxRangeMeters:3750, optimalRangeMeters:2500, baseAccuracy:0.80, longRangeAccuracy:0.61, penetration:10, stationaryOnly:true } },
+      type99:{ name:'ZTZ-99 MBT Platoon', image:'type99', health:12, armor:10, movement:5, weapon:{ name:'125 mm smoothbore', maxRangeMeters:3000, optimalRangeMeters:2000, baseAccuracy:0.79, longRangeAccuracy:0.56, penetration:11 } },
+      zbd04:{ name:'ZBD-04 IFV Platoon', image:'zbd04', health:8, armor:6, movement:6, weapon:{ name:'100 mm gun / ATGM', maxRangeMeters:4000, optimalRangeMeters:2200, baseAccuracy:0.74, longRangeAccuracy:0.52, penetration:9 } },
+      irgc:{ name:'IRGC Fortified ATGM Platoon', image:'irgc', health:8, armor:4, movement:0, rotateSprite:false, weapon:{ name:'ATGM network', maxRangeMeters:2500, optimalRangeMeters:1600, baseAccuracy:0.68, longRangeAccuracy:0.43, penetration:9, stationaryOnly:true } },
+      volunteers:{ name:'Iranian Volunteer Platoon', image:'volunteers', health:5, armor:2, movement:0, rotateSprite:false, weapon:{ name:'Rifle / RPG concentration', maxRangeMeters:600, optimalRangeMeters:300, baseAccuracy:0.52, longRangeAccuracy:0.27, penetration:6, stationaryOnly:true } }
     },
 
     units: [
@@ -131,7 +131,7 @@
       situation:'After a rapid U.S. drive into Khuzestan meets little resistance, its lead armored regiment reaches the western outskirts of Ahvaz. Missile strikes have damaged the approach corridor, but a concealed Chinese–Iranian defensive belt remains operational. The U.S. formation has superior machinery but brittle morale and must break through before losses force withdrawal.',
       sides:{
         US:'Command the armored spearhead. Preserve strength, cross the canal, and penetrate the eastern defensive belt before aggregate strength falls to 50%. An Apache formation arrives on turn 3 to provide CAS-guided precision strikes, but coalition air defenses reduce—and randomize—the chance of hitting each target.',
-        COALITION:'Command the combined defense. Use Chinese armor, prepared IRGC positions, and volunteers to hold the line or reduce the U.S. spearhead to half strength.'
+        COALITION:'Command the combined defense. Use Chinese armor platoons, prepared IRGC positions, and volunteer platoons to hold the line or reduce the U.S. spearhead to half strength.'
       }
     },
 
@@ -148,7 +148,7 @@
       }
     },
 
-    missionHtml:'Scale: one counter is one vehicle or infantry position; one hex is 100 m.<br><br><b>USA:</b> breach the eastern defensive line. At 50% aggregate starting strength, the regiment withdraws. Apache CAS arrives on turn 3, subject to coalition air defenses.<br><br><b>Alliance:</b> prevent a breach and reduce the U.S. spearhead to half strength.',
+    missionHtml:'Scale: one counter is one platoon (3–4 vehicles or 30–40 infantry); one hex is 100 m.<br><br><b>USA:</b> breach the eastern defensive line. At 50% aggregate starting strength, the spearhead withdraws. Apache CAS arrives on turn 3, subject to coalition air defenses.<br><br><b>Alliance:</b> prevent a breach and reduce the U.S. spearhead to half strength.',
     openingLog:['Missile impacts walk across the Ahvaz highway—but the defense remains intact.','Unexpected contact: Chinese armor and Iranian prepared positions ahead.','U.S. cohesion is fragile. A 50% strength loss will force withdrawal.'],
 
     determineWinner(game) {

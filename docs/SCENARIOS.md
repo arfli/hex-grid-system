@@ -11,6 +11,12 @@ The engine is scenario-driven. Generic rules and rendering live in `src/hex-war-
 
 Scenario coordinates use axial hex coordinates (`q`, `r`). Terrain placement uses compact `[q, r]` pairs. Distances, movement, range, drawing, selection, combat, turns, effects, and UI updates are provided by the engine.
 
+### Scale & Unit Echelons
+- **1 Hex = 100 meters** center-to-center ($8,660.25\text{ m}^2$ or $\sim 0.866\text{ ha}$).
+- **1 Unit Counter = 1 Platoon** (e.g., Tank Platoon of 3–4 MBTs, Mechanized Platoon of 3–4 IFVs + dismounts, ATGM Battery of 3–4 missile posts, or Infantry Platoon of 30–40 riflemen).
+- **Player Command Scope**: A company-sized vanguard / battalion combat team (e.g., 7 platoons representing ~28 combat vehicles) serving as the spearhead of a larger armored regiment.
+- **Platoon Frontage**: Fits within the $100\text{ m}$ hex diameter, reflecting realistic doctrinal tactical frontage and dispersion.
+
 Weapon ranges are stored in meters and converted to hexes by the engine. A weapon may define `optimalRangeMeters`, `maxRangeMeters`, close/long-range accuracy, penetration, and `stationaryOnly`. Units separately define armor, health, mobility, and crew quality. Scenario-wide visibility and crosswind settings belong in `environment`.
 
 `movement` is a per-turn movement-point allowance. Terrain consumes its configured `movementCost`, and units may move repeatedly until their points are gone.
