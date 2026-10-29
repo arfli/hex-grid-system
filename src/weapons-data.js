@@ -1,11 +1,111 @@
 (function (global) {
   'use strict';
 
+  const TRACER_FX = {
+    enabled: true,
+    speedScale: 1.0,
+    trailLength: 1.0,
+    muzzleFlash: true,
+    impactFlash: true,
+    smokeTrail: true
+  };
+
+  const TRACER_PROFILES = {
+    apfsds: {
+      type: 'kinetic',
+      duration: 170,
+      width: 2.6,
+      length: 46,
+      coreColor: '#ffffff',
+      glowColor: '#60a5fa', // bright electric blue-cyan
+      trailAlpha: 0.85,
+      muzzleFlash: { color: '#93c5fd', size: 16, duration: 80 },
+      impact: { type: 'sparks', count: 9, color: '#fef08a', size: 3.5, life: 250 }
+    },
+    heat: {
+      type: 'shaped_charge',
+      duration: 270,
+      width: 3.0,
+      length: 30,
+      coreColor: '#fef08a',
+      glowColor: '#ea580c', // bright flame orange
+      trailAlpha: 0.9,
+      muzzleFlash: { color: '#f97316', size: 18, duration: 90 },
+      impact: { type: 'flash', count: 12, color: '#f97316', size: 5.5, life: 300 }
+    },
+    atgm: {
+      type: 'missile',
+      duration: 650,
+      width: 4.0,
+      length: 16,
+      coreColor: '#fef3c7',
+      glowColor: '#f97316', // rocket exhaust amber
+      trailAlpha: 0.95,
+      wobble: { freq: 12, amp: 4.5 },
+      smoke: { interval: 25, color: 'rgba(190, 190, 190, 0.45)', size: 5.0, maxLife: 450 },
+      muzzleFlash: { color: '#fb923c', size: 14, duration: 110 },
+      impact: { type: 'blast', count: 16, color: '#ef4444', size: 7.0, life: 400 }
+    },
+    he_frag: {
+      type: 'explosive',
+      duration: 420,
+      width: 3.5,
+      length: 24,
+      coreColor: '#f97316',
+      glowColor: '#dc2626',
+      trailAlpha: 0.85,
+      arcHeight: 40,
+      smoke: { interval: 35, color: 'rgba(140, 140, 140, 0.4)', size: 4.5, maxLife: 350 },
+      muzzleFlash: { color: '#ea580c', size: 20, duration: 110 },
+      impact: { type: 'ring', count: 14, color: '#f97316', size: 6.5, life: 380 }
+    },
+    autocannon: {
+      type: 'burst',
+      duration: 210,
+      width: 2.0,
+      length: 24,
+      burstCount: 4,
+      burstInterval: 50,
+      coreColor: '#fef08a',
+      glowColor: '#f59e0b',
+      trailAlpha: 0.85,
+      muzzleFlash: { color: '#fde047', size: 10, duration: 60 },
+      impact: { type: 'sparks', count: 5, color: '#fde047', size: 2.5, life: 180 }
+    },
+    mg: {
+      type: 'burst',
+      duration: 180,
+      width: 1.5,
+      length: 18,
+      burstCount: 5,
+      burstInterval: 40,
+      coreColor: '#fde047',
+      glowColor: '#d97706',
+      trailAlpha: 0.8,
+      muzzleFlash: { color: '#fbbf24', size: 8, duration: 50 },
+      impact: { type: 'sparks', count: 4, color: '#fbbf24', size: 2.0, life: 160 }
+    },
+    small_arms: {
+      type: 'burst',
+      duration: 170,
+      width: 1.2,
+      length: 14,
+      burstCount: 3,
+      burstInterval: 45,
+      coreColor: '#fef9c3',
+      glowColor: '#ca8a04',
+      trailAlpha: 0.75,
+      muzzleFlash: { color: '#fef08a', size: 6, duration: 45 },
+      impact: { type: 'sparks', count: 3, color: '#fef9c3', size: 1.5, life: 150 }
+    }
+  };
+
   const AMMO_TYPES = {
     APFSDS: {
       label: 'APFSDS',
       name: 'Armour-Piercing Fin-Stabilized Discarding Sabot',
       kind: 'kinetic',
+      tracerProfile: 'apfsds',
       // NOT wired into combat yet; damage still comes from the unit's existing damage stat.
       effectiveness: { vsArmor: 1, vsInfantry: 1, vsSoft: 1, vsStructure: 1, vsAir: 1 }
     },
@@ -13,6 +113,7 @@
       label: 'HEAT',
       name: 'High-Explosive Anti-Tank',
       kind: 'shaped_charge',
+      tracerProfile: 'heat',
       // NOT wired into combat yet; damage still comes from the unit's existing damage stat.
       effectiveness: { vsArmor: 1, vsInfantry: 1, vsSoft: 1, vsStructure: 1, vsAir: 1 }
     },
@@ -20,6 +121,7 @@
       label: 'ATGM',
       name: 'Anti-Tank Guided Missile',
       kind: 'missile',
+      tracerProfile: 'atgm',
       // NOT wired into combat yet; damage still comes from the unit's existing damage stat.
       effectiveness: { vsArmor: 1, vsInfantry: 1, vsSoft: 1, vsStructure: 1, vsAir: 1 }
     },
@@ -27,6 +129,7 @@
       label: 'HE / HE-FRAG',
       name: 'High-Explosive Fragmentation',
       kind: 'explosive',
+      tracerProfile: 'he_frag',
       // NOT wired into combat yet; damage still comes from the unit's existing damage stat.
       effectiveness: { vsArmor: 1, vsInfantry: 1, vsSoft: 1, vsStructure: 1, vsAir: 1 }
     },
@@ -34,6 +137,7 @@
       label: 'Autocannon AP/APDS/HEI',
       name: 'Autocannon Mixed Belt',
       kind: 'ballistic_small',
+      tracerProfile: 'autocannon',
       // NOT wired into combat yet; damage still comes from the unit's existing damage stat.
       effectiveness: { vsArmor: 1, vsInfantry: 1, vsSoft: 1, vsStructure: 1, vsAir: 1 }
     },
@@ -41,6 +145,7 @@
       label: 'MG Ball + Tracer',
       name: 'Machine Gun Ball & Tracer Mix',
       kind: 'ballistic_small',
+      tracerProfile: 'mg',
       // NOT wired into combat yet; damage still comes from the unit's existing damage stat.
       effectiveness: { vsArmor: 1, vsInfantry: 1, vsSoft: 1, vsStructure: 1, vsAir: 1 }
     },
@@ -48,6 +153,7 @@
       label: 'Small Arms Ball',
       name: 'Rifle Ball Cartridge',
       kind: 'ballistic_small',
+      tracerProfile: 'small_arms',
       // NOT wired into combat yet; damage still comes from the unit's existing damage stat.
       effectiveness: { vsArmor: 1, vsInfantry: 1, vsSoft: 1, vsStructure: 1, vsAir: 1 }
     }
@@ -266,13 +372,23 @@
     return true;
   }
 
+  function getTracerProfile(profileId) {
+    if (profileId && TRACER_PROFILES[profileId]) {
+      return TRACER_PROFILES[profileId];
+    }
+    return TRACER_PROFILES.apfsds;
+  }
+
   const exportObj = {
+    TRACER_FX,
+    TRACER_PROFILES,
     AMMO_TYPES,
     WEAPONS,
     getUnitWeapons,
     getPrimaryWeapon,
     getAmmo,
     getVisualWeaponAndAmmo,
+    getTracerProfile,
     validateWeaponsData
   };
 

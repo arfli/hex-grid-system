@@ -175,17 +175,163 @@
     }
 
     drawParticles() {
+      this.drawGroundParticles();
+      this.drawAirParticles();
+    }
+
+    drawGroundParticles() {
       const pool = this.game.particlePool;
       if (!pool) return;
       const ctx = this.context;
       for (const p of pool) {
-        if (!p.active || p.alpha <= 0.01) continue;
+        if (!p.active || p.alpha <= 0.01 || p.type !== 'dust') continue;
         ctx.save();
         ctx.beginPath();
         ctx.arc(p.x, p.y, Math.max(1, p.size), 0, Math.PI * 2);
         ctx.fillStyle = `rgba(185, 165, 125, ${p.alpha.toFixed(2)})`;
         ctx.fill();
         ctx.restore();
+      }
+    }
+
+    drawAirParticles() {
+      const pool = this.game.particlePool;
+      if (!pool) return;
+      const ctx = this.context;
+      for (const p of pool) {
+        if (!p.active || p.alpha <= 0.01 || p.type === 'dust') continue;
+        ctx.save();
+        if (p.type === 'muzzle') {
+          ctx.translate(p.x, p.y);
+          ctx.globalAlpha = p.alpha;
+          ctx.beginPath();
+          ctx.arc(0, 0, p.size, 0, Math.PI * 2);
+          ctx.fillStyle = p.color || '#fde047';
+          ctx.fill();
+          ctx.beginPath();
+          ctx.arc(0, 0, p.size * 0.45, 0, Math.PI * 2);
+          ctx.fillStyle = '#ffffff';
+          ctx.fill();
+        } else if (p.type === 'spark') {
+          ctx.globalAlpha = p.alpha;
+          ctx.beginPath();
+          ctx.moveTo(p.x, p.y);
+          ctx.lineTo(p.x - (p.vx || 0) * 4, p.y - (p.vy || 0) * 4);
+          ctx.strokeStyle = p.color || '#fef08a';
+          ctx.lineWidth = Math.max(1, p.size);
+          ctx.stroke();
+        } else if (p.type === 'smoke') {
+          ctx.globalAlpha = p.alpha;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+          ctx.fillStyle = p.color || 'rgba(180, 180, 180, 0.4)';
+          ctx.fill();
+        } else if (p.type === 'ring') {
+          ctx.globalAlpha = p.alpha;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+          ctx.strokeStyle = p.color || '#f97316';
+          ctx.lineWidth = Math.max(1, 3 * p.alpha);
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+    }
+
+    drawTracers() {
+      const pool = this.game.projectilePool;
+      if (!pool) return;
+      const ctx = this.context;
+      const trailScale = this.game.tracerConfig?.trailLength || 1.0;
+
+      for (const p of pool) {
+        if (!p.active || p.delay > 0) continue;
+
+        const headX = p.currentX;
+        const headY = p.currentY;
+        const profile = p.profile || {};
+        const profileType = profile.type || 'kinetic';
+
+        if (profileType === 'missile') {
+          ctx.save();
+          ctx.translate(headX, headY);
+          ctx.rotate(p.angle);
+
+          const bodyLen = p.length;
+          const bodyW = p.width;
+
+          // Rocket flame / exhaust jet
+          const flicker = (Math.random() - 0.5) * 3;
+          ctx.beginPath();
+          ctx.moveTo(-bodyLen, -bodyW * 0.7);
+          ctx.lineTo(-bodyLen - 10 + flicker, 0);
+          ctx.lineTo(-bodyLen, bodyW * 0.7);
+          ctx.fillStyle = p.glowColor || '#f97316';
+          ctx.fill();
+
+          ctx.beginPath();
+          ctx.moveTo(-bodyLen, -bodyW * 0.35);
+          ctx.lineTo(-bodyLen - 5, 0);
+          ctx.lineTo(-bodyLen, bodyW * 0.35);
+          ctx.fillStyle = '#ffffff';
+          ctx.fill();
+
+          // Missile body
+          ctx.fillStyle = '#334155';
+          ctx.fillRect(-bodyLen, -bodyW / 2, bodyLen, bodyW);
+
+          // Nose cone
+          ctx.beginPath();
+          ctx.moveTo(0, -bodyW / 2);
+          ctx.lineTo(bodyW * 1.2, 0);
+          ctx.lineTo(0, bodyW / 2);
+          ctx.fillStyle = '#0f172a';
+          ctx.fill();
+
+          // Steering fins
+          ctx.strokeStyle = '#64748b';
+          ctx.lineWidth = 1.2;
+          ctx.beginPath();
+          ctx.moveTo(-bodyLen * 0.8, -bodyW * 1.1);
+          ctx.lineTo(-bodyLen * 0.95, -bodyW / 2);
+          ctx.lineTo(-bodyLen * 0.8, bodyW * 1.1);
+          ctx.stroke();
+
+          ctx.restore();
+        } else {
+          const len = p.length * trailScale;
+          const tailDist = Math.min(len, p.progress * p.distance);
+          const tailX = headX - Math.cos(p.angle) * tailDist;
+          const tailY = headY - Math.sin(p.angle) * tailDist;
+
+          ctx.save();
+          // Outer glow pass
+          ctx.beginPath();
+          ctx.moveTo(tailX, tailY);
+          ctx.lineTo(headX, headY);
+          ctx.strokeStyle = p.glowColor || '#60a5fa';
+          ctx.lineWidth = p.width * 2.2;
+          ctx.globalAlpha = (profile.trailAlpha || 0.8) * 0.45;
+          ctx.lineCap = 'round';
+          ctx.stroke();
+
+          // Inner core pass
+          ctx.beginPath();
+          ctx.moveTo(tailX, tailY);
+          ctx.lineTo(headX, headY);
+          ctx.strokeStyle = p.coreColor || '#ffffff';
+          ctx.lineWidth = p.width;
+          ctx.globalAlpha = profile.trailAlpha || 0.9;
+          ctx.stroke();
+
+          // Tip glow point
+          ctx.beginPath();
+          ctx.arc(headX, headY, p.width * 1.1, 0, Math.PI * 2);
+          ctx.fillStyle = '#ffffff';
+          ctx.globalAlpha = 1.0;
+          ctx.fill();
+          ctx.restore();
+        }
       }
     }
 
@@ -227,8 +373,10 @@
       }
 
       this.game.objectives.forEach((objective, index) => this.drawObjective(objective, index));
-      this.drawParticles();
+      this.drawGroundParticles();
       this.game.livingUnits.forEach(unit => this.drawUnit(unit));
+      this.drawAirParticles();
+      this.drawTracers();
       this.drawTargets();
       this.drawImpacts();
       this.drawAirMissions();
@@ -544,6 +692,7 @@
       const target = this.chooseTarget(unit);
       if (!target) return;
       this.game.attack(unit, target);
+      await this.game.waitForAnimations();
       await this.pause(260);
     }
 
@@ -551,6 +700,7 @@
       let target = this.chooseTarget(unit);
       if (target) {
         this.game.attack(unit, target);
+        await this.game.waitForAnimations();
         await this.pause(220);
         if (this.game.gameOver) return;
       }
@@ -571,6 +721,7 @@
         target = this.chooseTarget(unit);
         if (target && !(unit.weapon.stationaryOnly && unit.hasMoved)) {
           this.game.attack(unit, target);
+          await this.game.waitForAnimations();
           await this.pause(220);
         }
       }
@@ -636,11 +787,16 @@
       this.ui = new GameUI(this);
       this.ai = new TacticalAI(this);
       this.animConfig = { ...MOVE_ANIM, ...(options.animConfig || {}) };
+      const defaultTracerConfig = (typeof HexWar !== 'undefined' && HexWar.TRACER_FX)
+        ? HexWar.TRACER_FX
+        : { enabled: true, speedScale: 1.0, trailLength: 1.0, muzzleFlash: true, impactFlash: true, smokeTrail: true };
+      this.tracerConfig = { ...defaultTracerConfig, ...(options.tracerConfig || {}) };
       this.animatingUnits = [];
       this.animWaiters = [];
       this.animRafId = null;
       this.lastAnimTime = 0;
-      this.particlePool = this.createParticlePool();
+      this.projectilePool = this.createProjectilePool(32);
+      this.particlePool = this.createParticlePool(96);
       this.cachedReachableCells = null;
       this.cachedReachableKeys = new Set();
       this.debugPerf = !!options.debugPerf;
@@ -805,7 +961,11 @@
     }
 
     isAnimating() {
-      return this.animatingUnits.length > 0;
+      return this.animatingUnits.length > 0 || this.hasActiveProjectiles();
+    }
+
+    hasActiveProjectiles() {
+      return this.projectilePool ? this.projectilePool.some(p => p.active) : false;
     }
 
     waitForAnimations() {
@@ -841,6 +1001,22 @@
         }
       }
       this.animatingUnits = [];
+
+      if (this.projectilePool) {
+        for (const p of this.projectilePool) {
+          if (!p.active) continue;
+          p.active = false;
+          if (p.outcome) {
+            this.applyAttackOutcome(p.outcome);
+            p.outcome = null;
+          }
+          if (p.onImpact) {
+            p.onImpact();
+            p.onImpact = null;
+          }
+        }
+      }
+
       this.clearDustParticles();
       if (this.animRafId) {
         cancelAnimationFrame(this.animRafId);
@@ -851,9 +1027,46 @@
       this.render();
     }
 
-    createParticlePool() {
-      return Array.from({ length: 32 }, () => ({
+    createProjectilePool(size = 32) {
+      return Array.from({ length: size }, () => ({
         active: false,
+        weaponId: null,
+        ammoId: null,
+        profile: null,
+        startX: 0,
+        startY: 0,
+        targetX: 0,
+        targetY: 0,
+        currentX: 0,
+        currentY: 0,
+        prevX: 0,
+        prevY: 0,
+        angle: 0,
+        distance: 0,
+        perpX: 0,
+        perpY: 0,
+        elapsed: 0,
+        duration: 200,
+        delay: 0,
+        progress: 0,
+        arcHeight: 0,
+        wobbleFreq: 0,
+        wobbleAmp: 0,
+        smokeTimer: 0,
+        isLastInBurst: true,
+        outcome: null,
+        onImpact: null,
+        coreColor: '#fff',
+        glowColor: '#60a5fa',
+        width: 2.5,
+        length: 40
+      }));
+    }
+
+    createParticlePool(size = 96) {
+      return Array.from({ length: size }, () => ({
+        active: false,
+        type: 'dust',
         x: 0,
         y: 0,
         vx: 0,
@@ -861,7 +1074,8 @@
         size: 0,
         alpha: 0,
         maxLife: 0,
-        life: 0
+        life: 0,
+        color: null
       }));
     }
 
@@ -871,18 +1085,113 @@
       for (let i = 0; i < 2; i++) {
         const p = this.particlePool.find(item => !item.active);
         if (!p) break;
-        const angle = rearAngle + (this.random() - 0.5) * 0.8;
-        const speed = 0.3 + this.random() * 0.5;
+        const angle = rearAngle + (Math.random() - 0.5) * 0.8;
+        const speed = 0.3 + Math.random() * 0.5;
         p.active = true;
-        p.x = x + Math.cos(rearAngle) * 16 + (this.random() - 0.5) * 8;
-        p.y = y + Math.sin(rearAngle) * 8 + (this.random() - 0.5) * 6;
+        p.type = 'dust';
+        p.x = x + Math.cos(rearAngle) * 16 + (Math.random() - 0.5) * 8;
+        p.y = y + Math.sin(rearAngle) * 8 + (Math.random() - 0.5) * 6;
         p.vx = Math.cos(angle) * speed;
         p.vy = Math.sin(angle) * speed;
-        p.size = 5 + this.random() * 5;
+        p.size = 5 + Math.random() * 5;
         p.alpha = 0.45;
         p.maxLife = 320;
         p.life = 0;
+        p.color = null;
       }
+    }
+
+    spawnMuzzleFlash(x, y, facing, flashConfig) {
+      if (!this.particlePool || !flashConfig) return;
+      const p = this.particlePool.find(item => !item.active);
+      if (p) {
+        p.active = true;
+        p.type = 'muzzle';
+        p.x = x;
+        p.y = y;
+        p.vx = 0;
+        p.vy = 0;
+        p.size = flashConfig.size || 14;
+        p.alpha = 1.0;
+        p.maxLife = flashConfig.duration || 80;
+        p.life = 0;
+        p.color = flashConfig.color || '#fde047';
+      }
+      for (let i = 0; i < 3; i++) {
+        const sp = this.particlePool.find(item => !item.active);
+        if (!sp) break;
+        const angle = facing + (Math.random() - 0.5) * 0.6;
+        const speed = 0.8 + Math.random() * 0.9;
+        sp.active = true;
+        sp.type = 'spark';
+        sp.x = x;
+        sp.y = y;
+        sp.vx = Math.cos(angle) * speed;
+        sp.vy = Math.sin(angle) * speed;
+        sp.size = 1.5;
+        sp.alpha = 0.9;
+        sp.maxLife = 120 + Math.random() * 80;
+        sp.life = 0;
+        sp.color = flashConfig.color || '#fef08a';
+      }
+    }
+
+    spawnImpactSparks(x, y, impactConfig) {
+      if (!this.particlePool || !impactConfig) return;
+      const count = impactConfig.count || 8;
+      const type = impactConfig.type || 'sparks';
+
+      if (type === 'ring' || type === 'blast') {
+        const rp = this.particlePool.find(item => !item.active);
+        if (rp) {
+          rp.active = true;
+          rp.type = 'ring';
+          rp.x = x;
+          rp.y = y;
+          rp.vx = 0;
+          rp.vy = 0;
+          rp.size = 8;
+          rp.alpha = 1.0;
+          rp.maxLife = impactConfig.life || 300;
+          rp.life = 0;
+          rp.color = impactConfig.color || '#f97316';
+        }
+      }
+
+      for (let i = 0; i < count; i++) {
+        const p = this.particlePool.find(item => !item.active);
+        if (!p) break;
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 0.4 + Math.random() * 1.2;
+        p.active = true;
+        p.type = type === 'blast' && i % 3 === 0 ? 'smoke' : 'spark';
+        p.x = x + (Math.random() - 0.5) * 6;
+        p.y = y + (Math.random() - 0.5) * 6;
+        p.vx = Math.cos(angle) * speed;
+        p.vy = Math.sin(angle) * speed - 0.2;
+        p.size = p.type === 'smoke' ? (4 + Math.random() * 4) : (impactConfig.size || 2.5);
+        p.alpha = 0.95;
+        p.maxLife = (impactConfig.life || 250) * (0.7 + Math.random() * 0.6);
+        p.life = 0;
+        p.color = p.type === 'smoke' ? 'rgba(140, 140, 140, 0.45)' : (impactConfig.color || '#fef08a');
+      }
+    }
+
+    spawnTracerSmoke(x, y, smokeConfig) {
+      if (!this.particlePool || !smokeConfig) return;
+      const p = this.particlePool.find(item => !item.active);
+      if (!p) return;
+      p.active = true;
+      p.type = 'smoke';
+      p.x = x + (Math.random() - 0.5) * 4;
+      p.y = y + (Math.random() - 0.5) * 4;
+      p.vx = (Math.random() - 0.5) * 0.15;
+      p.vy = -0.15 - Math.random() * 0.15;
+      p.size = smokeConfig.size || 5;
+      p.alpha = 0.5;
+      p.maxLife = smokeConfig.maxLife || 400;
+      p.life = 0;
+      p.color = smokeConfig.color || 'rgba(180, 180, 180, 0.4)';
     }
 
     updateParticles(dt) {
@@ -896,12 +1205,93 @@
           continue;
         }
         anyActive = true;
-        p.x += p.vx * dt * 0.06;
-        p.y += p.vy * dt * 0.06;
-        p.size += dt * 0.015;
-        p.alpha = Math.max(0, 0.45 * (1 - p.life / p.maxLife));
+        const progress = p.life / p.maxLife;
+        if (p.type === 'dust') {
+          p.x += p.vx * dt * 0.06;
+          p.y += p.vy * dt * 0.06;
+          p.size += dt * 0.015;
+          p.alpha = Math.max(0, 0.45 * (1 - progress));
+        } else if (p.type === 'spark') {
+          p.x += p.vx * dt * 0.06;
+          p.y += p.vy * dt * 0.06;
+          p.vy += dt * 0.005;
+          p.alpha = Math.max(0, 1 - progress);
+        } else if (p.type === 'smoke') {
+          p.x += p.vx * dt * 0.04;
+          p.y += p.vy * dt * 0.04;
+          p.size += dt * 0.02;
+          p.alpha = Math.max(0, 0.5 * (1 - progress));
+        } else if (p.type === 'muzzle') {
+          p.alpha = Math.max(0, 1 - progress * progress);
+        } else if (p.type === 'ring') {
+          p.size += dt * 0.08;
+          p.alpha = Math.max(0, 1 - progress);
+        }
       }
       return anyActive;
+    }
+
+    stepProjectiles(dt, now) {
+      if (!this.projectilePool) return;
+      for (const p of this.projectilePool) {
+        if (!p.active) continue;
+        if (p.delay > 0) {
+          p.delay -= dt;
+          if (p.delay <= 0) {
+            p.elapsed = -p.delay;
+            if (this.tracerConfig.muzzleFlash && p.profile?.muzzleFlash) {
+              this.spawnMuzzleFlash(p.startX, p.startY, p.angle, p.profile.muzzleFlash);
+            }
+          } else {
+            continue;
+          }
+        } else {
+          p.elapsed += dt;
+        }
+
+        const t = Math.min(1, p.elapsed / p.duration);
+        p.progress = t;
+
+        let curX = p.startX + (p.targetX - p.startX) * t;
+        let curY = p.startY + (p.targetY - p.startY) * t;
+
+        if (p.arcHeight) {
+          curY -= Math.sin(t * Math.PI) * p.arcHeight;
+        }
+        if (p.wobbleAmp) {
+          const wobble = Math.sin(t * Math.PI * p.wobbleFreq) * p.wobbleAmp * (1 - t * 0.2);
+          curX += p.perpX * wobble;
+          curY += p.perpY * wobble;
+        }
+
+        p.prevX = p.currentX;
+        p.prevY = p.currentY;
+        p.currentX = curX;
+        p.currentY = curY;
+
+        if (p.profile?.smoke && this.tracerConfig.smokeTrail) {
+          p.smokeTimer += dt;
+          if (p.smokeTimer >= p.profile.smoke.interval) {
+            this.spawnTracerSmoke(curX, curY, p.profile.smoke);
+            p.smokeTimer = 0;
+          }
+        }
+
+        if (t >= 1) {
+          p.active = false;
+          if (this.tracerConfig.impactFlash && p.profile?.impact) {
+            this.spawnImpactSparks(p.targetX, p.targetY, p.profile.impact);
+          }
+          if (p.outcome) {
+            this.applyAttackOutcome(p.outcome);
+            p.outcome = null;
+          }
+          if (p.onImpact) {
+            p.onImpact();
+            p.onImpact = null;
+          }
+        }
+      }
     }
 
     hasActiveParticles() {
@@ -948,6 +1338,7 @@
         }
       }
 
+      this.stepProjectiles(dt, now);
       this.updateParticles(dt);
 
       if (!this.isAnimating()) {
@@ -1092,17 +1483,16 @@
       return false;
     }
 
-    attack(attacker, target) {
-      if (attacker.hasFired || attacker.health <= 0 || target.health <= 0) return;
-      if (attacker.weapon.stationaryOnly && attacker.hasMoved) return;
-      attacker.hasFired = true;
-      attacker.facing = this.directionAngle(attacker, target);
-      this.resolveAttack(attacker, target);
-      this.checkWinner();
-      this.update();
+    getUnitRenderPosition(unit) {
+      if (!unit) return { x: 0, y: 0 };
+      const anim = unit.animState;
+      if (anim) {
+        return { x: anim.renderX, y: anim.renderY + (anim.bobY || 0) };
+      }
+      return this.grid.toPixel(unit);
     }
 
-    resolveAttack(attacker, target) {
+    calculateAttackOutcome(attacker, target) {
       const distance = this.grid.distance(attacker, target);
       const distanceMeters = distance * this.scenario.map.metersPerHex;
       const accuracy = this.calculateAccuracy(attacker, target, distanceMeters);
@@ -1111,13 +1501,136 @@
       const penetrated = hit && this.random() <= Math.max(0.2, Math.min(0.9, 0.55 + penetrationMargin * 0.12));
       const damage = penetrated ? Math.max(1, 3 + penetrationMargin + Math.floor(this.random() * 3)) : hit ? 1 : 0;
       const result = !hit ? 'miss' : penetrated ? `PENETRATION for ${damage}` : 'hit, armor held';
-      this.ui.log(`${attacker.id} fires at ${target.id} (${distanceMeters} m, ${Math.round(accuracy * 100)}% solution): ${result}.`);
-      if (hit) { target.health = Math.max(0, target.health - damage); this.showImpact(target); }
+      return { attacker, target, distanceMeters, accuracy, hit, penetrated, damage, result };
+    }
+
+    applyAttackOutcome(outcome) {
+      if (!outcome || !outcome.target) return;
+      const { attacker, target, distanceMeters, accuracy, hit, penetrated, damage, result } = outcome;
+      if (attacker && target && distanceMeters !== undefined && accuracy !== undefined) {
+        this.ui.log(`${attacker.id} fires at ${target.id} (${distanceMeters} m, ${Math.round(accuracy * 100)}% solution): ${result}.`);
+      }
+      if (hit) {
+        target.health = Math.max(0, target.health - damage);
+        this.showImpact(target);
+      }
       if (!target.health) {
         this.stopUnitAnimation(target);
         this.invalidateReachableCache();
         this.ui.log(`${target.id} destroyed.`);
       }
+      this.checkWinner();
+      this.update();
+    }
+
+    attack(attacker, target) {
+      if (attacker.hasFired || attacker.health <= 0 || target.health <= 0) return;
+      if (attacker.weapon.stationaryOnly && attacker.hasMoved) return;
+      attacker.hasFired = true;
+      attacker.facing = this.directionAngle(attacker, target);
+      const outcome = this.calculateAttackOutcome(attacker, target);
+
+      if (isHeadless || !this.tracerConfig?.enabled) {
+        this.applyAttackOutcome(outcome);
+        return;
+      }
+
+      this.fireAttackTracer(attacker, target, outcome);
+      this.update();
+    }
+
+    resolveAttack(attacker, target) {
+      const outcome = this.calculateAttackOutcome(attacker, target);
+      this.applyAttackOutcome(outcome);
+    }
+
+    fireAttackTracer(attacker, target, outcome) {
+      if (!this.projectilePool) return;
+
+      const attackerPos = this.getUnitRenderPosition(attacker);
+      const targetPos = this.getUnitRenderPosition(target);
+      const visual = (typeof HexWar !== 'undefined' && HexWar.getVisualWeaponAndAmmo)
+        ? HexWar.getVisualWeaponAndAmmo(attacker, target)
+        : null;
+
+      const weapon = visual?.weapon || attacker.weapon;
+      const ammo = visual?.ammo;
+      const profileId = ammo?.tracerProfile || weapon?.tracerProfile || 'apfsds';
+      const profile = (typeof HexWar !== 'undefined' && HexWar.getTracerProfile)
+        ? HexWar.getTracerProfile(profileId)
+        : null;
+
+      const speedScale = this.tracerConfig.speedScale || 1.0;
+      const baseDuration = (profile?.duration || 200) / speedScale;
+      const facing = attacker.facing !== undefined ? attacker.facing : this.directionAngle(attacker, target);
+
+      const startX = attackerPos.x + Math.cos(facing) * 24;
+      const startY = attackerPos.y + Math.sin(facing) * 14;
+
+      let targetX = targetPos.x;
+      let targetY = targetPos.y;
+      if (!outcome.hit) {
+        const missAngle = facing + (Math.random() - 0.5) * 0.45;
+        const missDist = 38 + Math.random() * 25;
+        targetX += Math.cos(missAngle) * missDist;
+        targetY += Math.sin(missAngle) * missDist;
+      }
+
+      const burstCount = profile?.burstCount || 1;
+      const burstInterval = profile?.burstInterval || 45;
+
+      for (let i = 0; i < burstCount; i++) {
+        const slot = this.projectilePool.find(p => !p.active);
+        if (!slot) break;
+
+        const delay = i * burstInterval;
+        const isLast = (i === burstCount - 1);
+
+        slot.active = true;
+        slot.weaponId = weapon?.id || null;
+        slot.ammoId = visual?.ammoId || null;
+        slot.profile = profile;
+        slot.startX = startX;
+        slot.startY = startY;
+        slot.targetX = targetX + (burstCount > 1 ? (Math.random() - 0.5) * 12 : 0);
+        slot.targetY = targetY + (burstCount > 1 ? (Math.random() - 0.5) * 12 : 0);
+        slot.currentX = startX;
+        slot.currentY = startY;
+        slot.prevX = startX;
+        slot.prevY = startY;
+
+        const dx = slot.targetX - startX;
+        const dy = slot.targetY - startY;
+        slot.distance = Math.hypot(dx, dy);
+        slot.angle = Math.atan2(dy, dx);
+        slot.perpX = -Math.sin(slot.angle);
+        slot.perpY = Math.cos(slot.angle);
+
+        slot.elapsed = 0;
+        slot.duration = baseDuration;
+        slot.delay = delay;
+        slot.progress = 0;
+
+        slot.arcHeight = profile?.arcHeight || 0;
+        slot.wobbleFreq = profile?.wobble?.freq || 0;
+        slot.wobbleAmp = profile?.wobble?.amp || 0;
+        slot.smokeTimer = 0;
+
+        slot.coreColor = profile?.coreColor || '#ffffff';
+        slot.glowColor = profile?.glowColor || '#60a5fa';
+        slot.width = profile?.width || 2.5;
+        slot.length = profile?.length || 40;
+
+        slot.isLastInBurst = isLast;
+        slot.outcome = isLast ? outcome : null;
+        slot.onImpact = null;
+
+        if (delay === 0 && this.tracerConfig.muzzleFlash && profile?.muzzleFlash) {
+          this.spawnMuzzleFlash(startX, startY, facing, profile.muzzleFlash);
+        }
+      }
+
+      this.startAnimationLoop();
     }
 
     directionAngle(from, to) {
@@ -1210,15 +1723,20 @@
     animateAirSupport(mission, now) {
       const progress = Math.max(0, Math.min(1, (now - mission.startedAt) / mission.duration));
       const formationCenterX = -135 + progress * (this.canvas.width + 540);
+      const currentY = mission.y + Math.sin(progress * Math.PI * 2) * 16;
       mission.strikes.forEach(strike => {
-        if (!strike.resolved && formationCenterX >= strike.triggerX) this.resolveAirStrike(strike, mission.config);
+        if (!strike.resolved && formationCenterX >= strike.triggerX) {
+          this.resolveAirStrike(strike, mission.config, formationCenterX, currentY);
+        }
       });
       this.render();
       if (progress < 1) {
         if (!isHeadless) requestAnimationFrame(time => this.animateAirSupport(mission, time));
         return;
       }
-      mission.strikes.filter(strike => !strike.resolved).forEach(strike => this.resolveAirStrike(strike, mission.config));
+      mission.strikes.filter(strike => !strike.resolved).forEach(strike => {
+        this.resolveAirStrike(strike, mission.config, formationCenterX, currentY);
+      });
       this.airMissions = this.airMissions.filter(item => item !== mission);
       this.cinematicRunning = false;
       this.checkWinner();
@@ -1226,29 +1744,97 @@
       this.scheduleAITurn();
     }
 
-    resolveAirStrike(strike, config) {
+    resolveAirStrike(strike, config, sourceX, sourceY) {
       strike.resolved = true;
       const target = strike.target;
       if (target.health <= 0) return;
       const hitChance = Math.max(0.05, Math.min(0.95, config.baseHitChance * config.airDefenseModifier));
       const hit = this.random() <= hitChance;
+      let damage = 0;
       if (hit) {
         const damageRange = config.maximumDamage - config.minimumDamage + 1;
-        const damage = config.minimumDamage + Math.floor(this.random() * damageRange);
-        target.health = Math.max(0, target.health - damage);
-        this.showImpact(target);
-        this.ui.log(`CAS strike hits ${target.id} (${Math.round(hitChance * 100)}% adjusted chance) for ${damage} damage.`);
-        if (!target.health) {
-          this.stopUnitAnimation(target);
-          this.invalidateReachableCache();
-          this.ui.log(`${target.id} destroyed by precision air attack.`);
-        }
-      } else {
-        const nearby = this.grid.neighbors(target);
-        const miss = nearby[Math.floor(this.random() * nearby.length)] || target;
-        this.showImpactAt(miss);
-        this.ui.log(`CAS strike misses ${target.id}; air defenses disrupt the attack (${Math.round(hitChance * 100)}% adjusted chance).`);
+        damage = config.minimumDamage + Math.floor(this.random() * damageRange);
       }
+      const nearby = this.grid.neighbors(target);
+      const missTarget = nearby[Math.floor(this.random() * nearby.length)] || target;
+      const impactCell = hit ? target : missTarget;
+      const impactPos = this.grid.toPixel(impactCell);
+
+      const applyStrike = () => {
+        if (hit) {
+          target.health = Math.max(0, target.health - damage);
+          this.showImpact(target);
+          this.ui.log(`CAS strike hits ${target.id} (${Math.round(hitChance * 100)}% adjusted chance) for ${damage} damage.`);
+          if (!target.health) {
+            this.stopUnitAnimation(target);
+            this.invalidateReachableCache();
+            this.ui.log(`${target.id} destroyed by precision air attack.`);
+          }
+        } else {
+          this.showImpactAt(missTarget);
+          this.ui.log(`CAS strike misses ${target.id}; air defenses disrupt the attack (${Math.round(hitChance * 100)}% adjusted chance).`);
+        }
+        this.checkWinner();
+        this.update();
+      };
+
+      if (isHeadless || !this.tracerConfig?.enabled || sourceX === undefined) {
+        applyStrike();
+        return;
+      }
+
+      const slot = this.projectilePool ? this.projectilePool.find(p => !p.active) : null;
+      if (!slot) {
+        applyStrike();
+        return;
+      }
+
+      const profile = (typeof HexWar !== 'undefined' && HexWar.getTracerProfile)
+        ? HexWar.getTracerProfile('atgm')
+        : null;
+
+      const startX = sourceX;
+      const startY = sourceY + 45;
+      const dx = impactPos.x - startX;
+      const dy = impactPos.y - startY;
+
+      slot.active = true;
+      slot.weaponId = 'hellfire_atgm';
+      slot.ammoId = 'ATGM';
+      slot.profile = profile;
+      slot.startX = startX;
+      slot.startY = startY;
+      slot.targetX = impactPos.x;
+      slot.targetY = impactPos.y;
+      slot.currentX = startX;
+      slot.currentY = startY;
+      slot.prevX = startX;
+      slot.prevY = startY;
+      slot.distance = Math.hypot(dx, dy);
+      slot.angle = Math.atan2(dy, dx);
+      slot.perpX = -Math.sin(slot.angle);
+      slot.perpY = Math.cos(slot.angle);
+      slot.elapsed = 0;
+      slot.duration = (profile?.duration || 650) * 0.9;
+      slot.delay = 0;
+      slot.progress = 0;
+      slot.arcHeight = 0;
+      slot.wobbleFreq = profile?.wobble?.freq || 10;
+      slot.wobbleAmp = profile?.wobble?.amp || 3.5;
+      slot.smokeTimer = 0;
+      slot.coreColor = profile?.coreColor || '#fef3c7';
+      slot.glowColor = profile?.glowColor || '#f97316';
+      slot.width = profile?.width || 4.0;
+      slot.length = profile?.length || 16;
+      slot.isLastInBurst = true;
+      slot.outcome = null;
+      slot.onImpact = applyStrike;
+
+      if (this.tracerConfig.muzzleFlash && profile?.muzzleFlash) {
+        this.spawnMuzzleFlash(startX, startY, slot.angle, profile.muzzleFlash);
+      }
+
+      this.startAnimationLoop();
     }
 
     scheduleAITurn() {
@@ -1369,5 +1955,8 @@
     }
   }
 
-  global.HexWar = { HexGrid, HexWarGame, TacticalAI, MapViewport, ModalDialog, StoryIntro, MOVE_ANIM, BattlefieldRenderer };
+  global.HexWar = Object.assign(global.HexWar || {}, { HexGrid, HexWarGame, TacticalAI, MapViewport, ModalDialog, StoryIntro, MOVE_ANIM, BattlefieldRenderer });
+  if (typeof module !== 'undefined' && module.exports) {
+    module.exports = global.HexWar;
+  }
 }(typeof window !== 'undefined' ? window : globalThis));
