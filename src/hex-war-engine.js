@@ -2,6 +2,19 @@
   'use strict';
 
   const SQRT_3 = Math.sqrt(3);
+  const isHeadless = typeof window === 'undefined' || typeof requestAnimationFrame === 'undefined';
+  const nowTime = () => (typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now());
+
+  const MOVE_ANIM = {
+    enabled: true,
+    durationPerHex: 150, // ms per hex (~0.12 - 0.18s)
+    settleDuration: 120, // ms for arrival bounce/settle
+    bob: true,           // subtle vertical hop while moving
+    bobHeight: 5,        // max pixel bob height
+    shadow: true,        // soft ground shadow under moving unit
+    dust: true,          // dust particles at entered hexes
+    settle: true         // slight bounce on arrival
+  };
 
   class HexGrid {
     constructor(config) {
@@ -97,10 +110,26 @@
       const reachableKeys = new Set(this.game.reachableCells().map(cell => this.game.grid.key(cell)));
       this.game.grid.cells.forEach(cell => this.drawCell(cell, reachableKeys.has(this.game.grid.key(cell))));
       this.game.objectives.forEach((objective, index) => this.drawObjective(objective, index));
+      this.drawParticles();
       this.game.livingUnits.forEach(unit => this.drawUnit(unit));
       this.drawTargets();
       this.drawImpacts();
       this.drawAirMissions();
+    }
+
+    drawParticles() {
+      const pool = this.game.particlePool;
+      if (!pool) return;
+      const ctx = this.context;
+      for (const p of pool) {
+        if (!p.active || p.alpha <= 0.01) continue;
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, Math.max(1, p.size), 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(185, 165, 125, ${p.alpha.toFixed(2)})`;
+        ctx.fill();
+        ctx.restore();
+      }
     }
 
     hexPath(cell) {
@@ -159,13 +188,26 @@
 
     drawUnit(unit) {
       const ctx = this.context;
-      const center = this.game.grid.toPixel(unit);
+      const anim = unit.animState;
+      const center = anim ? { x: anim.renderX, y: anim.renderY } : this.game.grid.toPixel(unit);
+      const bobY = (anim && anim.bobY) || 0;
+      const facing = (anim && anim.renderFacing !== undefined) ? anim.renderFacing : unit.facing;
       const color = this.game.factions[unit.faction].color;
+
+      if (anim && this.game.animConfig?.shadow) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.ellipse(center.x, center.y + 14, 28, 12, 0, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.28)';
+        ctx.fill();
+        ctx.restore();
+      }
+
       ctx.save();
-      ctx.translate(center.x, center.y);
+      ctx.translate(center.x, center.y + bobY);
       // Vehicle source images point left (PI radians). Rotate that native
       // heading to the unit's persistent world-space facing direction.
-      if (unit.rotateSprite !== false) ctx.rotate(unit.facing - Math.PI);
+      if (unit.rotateSprite !== false) ctx.rotate(facing - Math.PI);
       this.drawImage(`unit:${unit.image}`, -43, -25, 86, 50, '#333');
       ctx.restore();
       ctx.beginPath();
@@ -189,7 +231,8 @@
       const selected = this.game.selected;
       if (!selected || selected.hasFired || (selected.weapon.stationaryOnly && selected.hasMoved)) return;
       this.game.attackableUnits(selected).forEach(unit => {
-        const center = this.game.grid.toPixel(unit);
+        const anim = unit.animState;
+        const center = anim ? { x: anim.renderX, y: anim.renderY } : this.game.grid.toPixel(unit);
         this.context.beginPath();
         this.context.arc(center.x, center.y, 41, 0, Math.PI * 2);
         this.context.strokeStyle = '#ff543f';
@@ -201,7 +244,7 @@
     }
 
     drawImpacts() {
-      const now = performance.now();
+      const now = nowTime();
       this.game.impacts.forEach(impact => {
         const center = this.game.grid.toPixel(impact);
         const progress = (now - impact.startedAt) / this.game.impactDuration;
@@ -214,7 +257,7 @@
     }
 
     drawAirMissions() {
-      const now = performance.now();
+      const now = nowTime();
       this.game.airMissions.forEach(mission => {
         const progress = Math.max(0, Math.min(1, (now - mission.startedAt) / mission.duration));
         const width = 270;
@@ -433,7 +476,8 @@
         if (destination) {
           this.game.selected = unit;
           this.game.move(unit, destination);
-          await this.pause(260);
+          await this.game.waitForAnimations();
+          await this.pause(140);
           if (this.game.gameOver) return;
         }
       }
@@ -503,6 +547,12 @@
       this.renderer = new BattlefieldRenderer(canvas, this);
       this.ui = new GameUI(this);
       this.ai = new TacticalAI(this);
+      this.animConfig = { ...MOVE_ANIM, ...(options.animConfig || {}) };
+      this.animatingUnits = [];
+      this.animWaiters = [];
+      this.animRafId = null;
+      this.lastAnimTime = 0;
+      this.particlePool = this.createParticlePool();
     }
 
     start() {
@@ -510,6 +560,11 @@
       this.canvas.height = this.scenario.map.height;
       this.ui.initialize();
       this.canvas.addEventListener('click', event => this.handleClick(event));
+      if (!isHeadless) {
+        window.addEventListener('keydown', () => {
+          if (this.isAnimating()) this.skipAnimations();
+        });
+      }
       document.getElementById('endTurn').addEventListener('click', () => this.endTurn());
       this.scenario.openingLog.forEach(message => this.ui.log(message));
       this.update();
@@ -586,6 +641,10 @@
     }
 
     handleClick(event) {
+      if (this.isAnimating()) {
+        this.skipAnimations();
+        return;
+      }
       if (this.gameOver || this.aiRunning || this.cinematicRunning || this.activeFaction !== this.playerFaction) return;
       const bounds = this.canvas.getBoundingClientRect();
       const cell = this.grid.closestCell((event.clientX - bounds.left) * this.canvas.width / bounds.width, (event.clientY - bounds.top) * this.canvas.height / bounds.height);
@@ -606,9 +665,11 @@
 
     move(unit, destination) {
       const route = this.pathTo(unit, destination);
-      if (!route) return;
+      if (!route || !route.cells.length) return;
       const startingPoints = unit.movementPoints;
-      for (const step of route.cells) {
+      const startCell = { q: unit.q, r: unit.r };
+      const steps = [...route.cells];
+      for (const step of steps) {
         unit.facing = this.directionAngle(unit, step);
         unit.q = step.q;
         unit.r = step.r;
@@ -618,7 +679,298 @@
       const spent = startingPoints - unit.movementPoints;
       this.ui.log(`${unit.id} spent ${spent} movement point${spent === 1 ? '' : 's'}; ${unit.movementPoints} remain.`);
       this.checkWinner();
-      this.update();
+
+      if (this.animConfig?.enabled && !isHeadless && steps.length > 0) {
+        this.startUnitAnimation(unit, startCell, steps);
+      } else {
+        unit.animState = null;
+        this.update();
+      }
+    }
+
+    isAnimating() {
+      return this.animatingUnits.length > 0;
+    }
+
+    waitForAnimations() {
+      if (!this.isAnimating()) return Promise.resolve();
+      return new Promise(resolve => {
+        this.animWaiters.push(resolve);
+      });
+    }
+
+    resolveAnimationWaiters() {
+      if (this.animWaiters && this.animWaiters.length) {
+        const waiters = this.animWaiters.splice(0);
+        waiters.forEach(resolve => resolve());
+      }
+    }
+
+    stopUnitAnimation(unit) {
+      if (!unit) return;
+      unit.animState = null;
+      const idx = this.animatingUnits.indexOf(unit);
+      if (idx !== -1) {
+        this.animatingUnits.splice(idx, 1);
+      }
+      if (!this.isAnimating()) {
+        this.resolveAnimationWaiters();
+      }
+    }
+
+    skipAnimations() {
+      for (const unit of this.animatingUnits) {
+        if (unit) {
+          unit.animState = null;
+        }
+      }
+      this.animatingUnits = [];
+      this.clearDustParticles();
+      if (this.animRafId) {
+        cancelAnimationFrame(this.animRafId);
+        this.animRafId = null;
+      }
+      this.resolveAnimationWaiters();
+      this.render();
+    }
+
+    createParticlePool() {
+      return Array.from({ length: 32 }, () => ({
+        active: false,
+        x: 0,
+        y: 0,
+        vx: 0,
+        vy: 0,
+        size: 0,
+        alpha: 0,
+        maxLife: 0,
+        life: 0
+      }));
+    }
+
+    spawnDust(x, y, facing) {
+      if (!this.particlePool) return;
+      const rearAngle = facing + Math.PI;
+      for (let i = 0; i < 2; i++) {
+        const p = this.particlePool.find(item => !item.active);
+        if (!p) break;
+        const angle = rearAngle + (this.random() - 0.5) * 0.8;
+        const speed = 0.3 + this.random() * 0.5;
+        p.active = true;
+        p.x = x + Math.cos(rearAngle) * 16 + (this.random() - 0.5) * 8;
+        p.y = y + Math.sin(rearAngle) * 8 + (this.random() - 0.5) * 6;
+        p.vx = Math.cos(angle) * speed;
+        p.vy = Math.sin(angle) * speed;
+        p.size = 5 + this.random() * 5;
+        p.alpha = 0.45;
+        p.maxLife = 320;
+        p.life = 0;
+      }
+    }
+
+    updateParticles(dt) {
+      if (!this.particlePool) return false;
+      let anyActive = false;
+      for (const p of this.particlePool) {
+        if (!p.active) continue;
+        p.life += dt;
+        if (p.life >= p.maxLife) {
+          p.active = false;
+          continue;
+        }
+        anyActive = true;
+        p.x += p.vx * dt * 0.06;
+        p.y += p.vy * dt * 0.06;
+        p.size += dt * 0.015;
+        p.alpha = Math.max(0, 0.45 * (1 - p.life / p.maxLife));
+      }
+      return anyActive;
+    }
+
+    hasActiveParticles() {
+      return this.particlePool ? this.particlePool.some(p => p.active) : false;
+    }
+
+    clearDustParticles() {
+      if (this.particlePool) {
+        this.particlePool.forEach(p => { p.active = false; });
+      }
+    }
+
+    startAnimationLoop() {
+      if (isHeadless || this.animRafId) return;
+      this.lastAnimTime = nowTime();
+      const tick = (now) => {
+        this.stepAnimation(now);
+        if (this.isAnimating() || this.hasActiveParticles()) {
+          this.animRafId = requestAnimationFrame(tick);
+        } else {
+          this.animRafId = null;
+          this.render();
+        }
+      };
+      this.animRafId = requestAnimationFrame(tick);
+    }
+
+    stepAnimation(now) {
+      const rawDt = now - this.lastAnimTime;
+      this.lastAnimTime = now;
+      const dt = Math.max(0, Math.min(50, rawDt));
+
+      for (let i = this.animatingUnits.length - 1; i >= 0; i--) {
+        const unit = this.animatingUnits[i];
+        if (!unit || unit.health <= 0 || !this.livingUnits.includes(unit)) {
+          if (unit) unit.animState = null;
+          this.animatingUnits.splice(i, 1);
+          continue;
+        }
+        const done = this.stepUnitAnimation(unit, dt, now);
+        if (done) {
+          unit.animState = null;
+          this.animatingUnits.splice(i, 1);
+        }
+      }
+
+      this.updateParticles(dt);
+
+      if (!this.isAnimating()) {
+        this.resolveAnimationWaiters();
+      }
+
+      this.render();
+    }
+
+    startUnitAnimation(unit, startCell, steps) {
+      const startPixel = this.grid.toPixel(startCell);
+      const waypoints = [startPixel, ...steps.map(step => this.grid.toPixel(step))];
+      const segmentAngles = [];
+      let prevCell = startCell;
+      for (const step of steps) {
+        segmentAngles.push(this.directionAngle(prevCell, step));
+        prevCell = step;
+      }
+
+      const numSegments = steps.length;
+      const durationPerHex = this.animConfig.durationPerHex;
+      const totalDuration = numSegments * durationPerHex;
+      const now = nowTime();
+
+      unit.animState = {
+        unit,
+        startCell,
+        steps,
+        waypoints,
+        segmentAngles,
+        numSegments,
+        durationPerHex,
+        totalDuration,
+        startTime: now,
+        elapsed: 0,
+        renderX: startPixel.x,
+        renderY: startPixel.y,
+        renderFacing: unit.facing,
+        currentSegment: 0,
+        bobY: 0,
+        settleStartTime: 0,
+        isSettling: false,
+        finished: false
+      };
+
+      if (!this.animatingUnits.includes(unit)) {
+        this.animatingUnits.push(unit);
+      }
+      this.startAnimationLoop();
+      this.ui.update();
+    }
+
+    stepUnitAnimation(unit, dt, now) {
+      const anim = unit.animState;
+      if (!anim || anim.finished) return true;
+
+      if (anim.isSettling) {
+        const settleElapsed = now - anim.settleStartTime;
+        const settleDur = this.animConfig.settleDuration;
+        if (settleElapsed >= settleDur || !this.animConfig.settle) {
+          anim.bobY = 0;
+          anim.renderX = anim.waypoints[anim.numSegments].x;
+          anim.renderY = anim.waypoints[anim.numSegments].y;
+          anim.finished = true;
+          return true;
+        }
+        const u = settleElapsed / settleDur;
+        anim.bobY = Math.sin(u * Math.PI * 2) * (1 - u) * 3;
+        return false;
+      }
+
+      anim.elapsed += dt;
+      const N = anim.numSegments;
+      const T1 = anim.durationPerHex;
+      const T = anim.totalDuration;
+      const t = Math.min(anim.elapsed, T);
+
+      let s = 0;
+      if (N === 1) {
+        const tau = t / T;
+        s = (1 - Math.cos(Math.PI * tau)) / 2;
+      } else {
+        const vMax = N / ((N - 1) * T1);
+        const s1 = (vMax / 2) * T1;
+        if (t <= T1) {
+          s = (vMax / 2) * (t - (T1 / Math.PI) * Math.sin((Math.PI * t) / T1));
+        } else if (t < T - T1) {
+          s = s1 + vMax * (t - T1);
+        } else {
+          const tPrime = t - (T - T1);
+          s = (N - s1) + (vMax / 2) * (tPrime + (T1 / Math.PI) * Math.sin((Math.PI * tPrime) / T1));
+        }
+      }
+      s = Math.max(0, Math.min(N, s));
+
+      const segIndex = Math.min(N - 1, Math.floor(s));
+      const segU = s - segIndex;
+
+      if (segIndex !== anim.currentSegment) {
+        anim.currentSegment = segIndex;
+        if (this.animConfig.dust) {
+          this.spawnDust(anim.renderX, anim.renderY, anim.renderFacing);
+        }
+      }
+
+      const p0 = anim.waypoints[segIndex];
+      const p1 = anim.waypoints[segIndex + 1];
+      anim.renderX = p0.x + (p1.x - p0.x) * segU;
+      anim.renderY = p0.y + (p1.y - p0.y) * segU;
+
+      if (this.animConfig.bob) {
+        anim.bobY = -Math.sin(segU * Math.PI) * this.animConfig.bobHeight;
+      } else {
+        anim.bobY = 0;
+      }
+
+      const targetAngle = anim.segmentAngles[segIndex];
+      let diff = targetAngle - anim.renderFacing;
+      diff = Math.atan2(Math.sin(diff), Math.cos(diff));
+      const turnSpeed = dt * 0.02;
+      if (Math.abs(diff) <= turnSpeed) {
+        anim.renderFacing = targetAngle;
+      } else {
+        anim.renderFacing += Math.sign(diff) * turnSpeed;
+      }
+
+      if (anim.elapsed >= T) {
+        anim.renderFacing = unit.facing;
+        if (this.animConfig.settle) {
+          anim.isSettling = true;
+          anim.settleStartTime = now;
+        } else {
+          anim.renderX = anim.waypoints[N].x;
+          anim.renderY = anim.waypoints[N].y;
+          anim.bobY = 0;
+          anim.finished = true;
+          return true;
+        }
+      }
+      return false;
     }
 
     attack(attacker, target) {
@@ -642,7 +994,10 @@
       const result = !hit ? 'miss' : penetrated ? `PENETRATION for ${damage}` : 'hit, armor held';
       this.ui.log(`${attacker.id} fires at ${target.id} (${distanceMeters} m, ${Math.round(accuracy * 100)}% solution): ${result}.`);
       if (hit) { target.health = Math.max(0, target.health - damage); this.showImpact(target); }
-      if (!target.health) this.ui.log(`${target.id} destroyed.`);
+      if (!target.health) {
+        this.stopUnitAnimation(target);
+        this.ui.log(`${target.id} destroyed.`);
+      }
     }
 
     directionAngle(from, to) {
@@ -675,17 +1030,18 @@
     showImpact(unit) { this.showImpactAt(unit); }
 
     showImpactAt(position) {
-      this.impacts.push({ q:position.q, r:position.r, startedAt:performance.now() });
-      requestAnimationFrame(time => this.animateImpacts(time));
+      this.impacts.push({ q:position.q, r:position.r, startedAt:nowTime() });
+      if (!isHeadless) requestAnimationFrame(time => this.animateImpacts(time));
     }
 
     animateImpacts(time) {
       this.impacts = this.impacts.filter(impact => time - impact.startedAt < this.impactDuration);
       this.render();
-      if (this.impacts.length) requestAnimationFrame(nextTime => this.animateImpacts(nextTime));
+      if (this.impacts.length && !isHeadless) requestAnimationFrame(nextTime => this.animateImpacts(nextTime));
     }
 
     endTurn(fromAI = false) {
+      if (this.isAnimating()) this.skipAnimations();
       if (this.gameOver || this.cinematicRunning || (this.aiRunning && !fromAI)) return;
       this.selected = null;
       const currentIndex = this.scenario.turnOrder.indexOf(this.activeFaction);
@@ -716,7 +1072,7 @@
       const averageY = targets.reduce((sum, target) => sum + this.grid.toPixel(target).y, 0) / targets.length;
       const mission = {
         image:config.image,
-        startedAt:performance.now(),
+        startedAt:nowTime(),
         duration:config.durationMs,
         y:Math.max(35, Math.min(this.canvas.height - 250, averageY - 107)),
         config,
@@ -726,7 +1082,7 @@
       this.airMissions.push(mission);
       this.ui.log(`Turn ${this.turn}: Apache formation enters from the west. Coalition air defenses are active.`);
       this.update();
-      requestAnimationFrame(time => this.animateAirSupport(mission, time));
+      if (!isHeadless) requestAnimationFrame(time => this.animateAirSupport(mission, time));
       return true;
     }
 
@@ -738,7 +1094,7 @@
       });
       this.render();
       if (progress < 1) {
-        requestAnimationFrame(time => this.animateAirSupport(mission, time));
+        if (!isHeadless) requestAnimationFrame(time => this.animateAirSupport(mission, time));
         return;
       }
       mission.strikes.filter(strike => !strike.resolved).forEach(strike => this.resolveAirStrike(strike, mission.config));
@@ -761,7 +1117,10 @@
         target.health = Math.max(0, target.health - damage);
         this.showImpact(target);
         this.ui.log(`CAS strike hits ${target.id} (${Math.round(hitChance * 100)}% adjusted chance) for ${damage} damage.`);
-        if (!target.health) this.ui.log(`${target.id} destroyed by precision air attack.`);
+        if (!target.health) {
+          this.stopUnitAnimation(target);
+          this.ui.log(`${target.id} destroyed by precision air attack.`);
+        }
       } else {
         const nearby = this.grid.neighbors(target);
         const miss = nearby[Math.floor(this.random() * nearby.length)] || target;
@@ -888,5 +1247,5 @@
     }
   }
 
-  global.HexWar = { HexGrid, HexWarGame, TacticalAI, MapViewport, ModalDialog, StoryIntro };
-}(window));
+  global.HexWar = { HexGrid, HexWarGame, TacticalAI, MapViewport, ModalDialog, StoryIntro, MOVE_ANIM };
+}(typeof window !== 'undefined' ? window : globalThis));
