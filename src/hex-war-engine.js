@@ -7,8 +7,8 @@
 
   const MOVE_ANIM = {
     enabled: true,
-    durationPerHex: 150, // ms per hex (~0.12 - 0.18s)
-    settleDuration: 120, // ms for arrival bounce/settle
+    durationPerHex: 240, // ms per hex (~0.24s for smooth tank glide)
+    settleDuration: 130, // ms for arrival bounce/settle
     bob: true,           // subtle vertical hop while moving
     bobHeight: 5,        // max pixel bob height
     shadow: true,        // soft ground shadow under moving unit
@@ -103,18 +103,75 @@
       this.canvas = canvas;
       this.context = canvas.getContext('2d');
       this.game = game;
+      this.cachedTerrainCanvas = null;
+      this.terrainCacheDirty = true;
+      this.perfStats = null;
     }
 
-    draw() {
-      this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
-      const reachableKeys = new Set(this.game.reachableCells().map(cell => this.game.grid.key(cell)));
-      this.game.grid.cells.forEach(cell => this.drawCell(cell, reachableKeys.has(this.game.grid.key(cell))));
-      this.game.objectives.forEach((objective, index) => this.drawObjective(objective, index));
-      this.drawParticles();
-      this.game.livingUnits.forEach(unit => this.drawUnit(unit));
-      this.drawTargets();
-      this.drawImpacts();
-      this.drawAirMissions();
+    invalidateTerrainCache() {
+      this.terrainCacheDirty = true;
+    }
+
+    createOffscreenCanvas(width, height) {
+      if (typeof OffscreenCanvas !== 'undefined') {
+        try {
+          return new OffscreenCanvas(width, height);
+        } catch (_) { /* fallback to document.createElement */ }
+      }
+      if (typeof document !== 'undefined' && document.createElement) {
+        const c = document.createElement('canvas');
+        c.width = width;
+        c.height = height;
+        return c;
+      }
+      return null;
+    }
+
+    bakeTerrain() {
+      if (!this.canvas) {
+        this.terrainCacheDirty = false;
+        return;
+      }
+      const w = this.canvas.width;
+      const h = this.canvas.height;
+      if (!this.cachedTerrainCanvas || this.cachedTerrainCanvas.width !== w || this.cachedTerrainCanvas.height !== h) {
+        this.cachedTerrainCanvas = this.createOffscreenCanvas(w, h);
+      }
+      if (!this.cachedTerrainCanvas) return;
+      const ctx = this.cachedTerrainCanvas.getContext('2d');
+      if (!ctx) return;
+      ctx.clearRect(0, 0, w, h);
+      this.game.grid.cells.forEach(cell => this.bakeCell(cell, ctx));
+      this.terrainCacheDirty = false;
+    }
+
+    bakeCell(cell, ctx) {
+      const center = this.game.grid.toPixel(cell);
+      const size = this.game.grid.size;
+      const terrainId = this.game.terrainAt(cell);
+      this.hexPath(cell, ctx);
+      ctx.save();
+      ctx.clip();
+      this.drawImage('baseTerrain', center.x - size, center.y - size, size * 2, size * 2, '#9a8658', ctx);
+      if (terrainId) {
+        const scale = terrainId === 'crater' ? 0.8 : 1;
+        this.drawImage(`terrain:${terrainId}`, center.x - size * scale, center.y - size * scale, size * 2 * scale, size * 2 * scale, null, ctx);
+      }
+      ctx.restore();
+      this.hexPath(cell, ctx);
+      ctx.strokeStyle = '#3c3828';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
+
+    drawReachableHighlight(cell) {
+      const ctx = this.context;
+      this.hexPath(cell, ctx);
+      ctx.fillStyle = '#4ea6e833';
+      ctx.fill();
+      ctx.strokeStyle = '#70c4ff';
+      ctx.lineWidth = 3;
+      ctx.stroke();
     }
 
     drawParticles() {
@@ -132,45 +189,71 @@
       }
     }
 
-    hexPath(cell) {
+    hexPath(cell, ctx = this.context) {
       const points = this.game.grid.polygon(cell);
-      this.context.beginPath();
-      points.forEach((point, index) => index ? this.context.lineTo(...point) : this.context.moveTo(...point));
-      this.context.closePath();
+      ctx.beginPath();
+      points.forEach((point, index) => index ? ctx.lineTo(...point) : ctx.moveTo(...point));
+      ctx.closePath();
     }
 
-    drawCell(cell, reachable) {
-      const { context:ctx } = this;
-      const center = this.game.grid.toPixel(cell);
-      const size = this.game.grid.size;
-      const terrainId = this.game.terrainAt(cell);
-      this.hexPath(cell);
-      ctx.save();
-      ctx.clip();
-      this.drawImage('baseTerrain', center.x - size, center.y - size, size * 2, size * 2, '#9a8658');
-      if (terrainId) {
-        const scale = terrainId === 'crater' ? 0.8 : 1;
-        this.drawImage(`terrain:${terrainId}`, center.x - size * scale, center.y - size * scale, size * 2 * scale, size * 2 * scale);
-      }
-      ctx.restore();
-      this.hexPath(cell);
-      ctx.strokeStyle = '#3c3828';
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
-      if (reachable) {
-        this.hexPath(cell);
-        ctx.fillStyle = '#4ea6e833';
-        ctx.fill();
-        ctx.strokeStyle = '#70c4ff';
-        ctx.lineWidth = 3;
-        ctx.stroke();
-      }
-    }
-
-    drawImage(assetId, x, y, width, height, fallbackColor) {
+    drawImage(assetId, x, y, width, height, fallbackColor, ctx = this.context) {
       const image = this.game.assets.get(assetId);
-      if (image?.complete && image.naturalWidth) this.context.drawImage(image, x, y, width, height);
-      else if (fallbackColor) { this.context.fillStyle = fallbackColor; this.context.fillRect(x, y, width, height); }
+      if (image?.complete && image.naturalWidth) ctx.drawImage(image, x, y, width, height);
+      else if (fallbackColor) { ctx.fillStyle = fallbackColor; ctx.fillRect(x, y, width, height); }
+    }
+
+    draw() {
+      const measure = BattlefieldRenderer.DEBUG_PERF || this.game.debugPerf;
+      const t0 = measure ? nowTime() : 0;
+
+      if (this.terrainCacheDirty || !this.cachedTerrainCanvas) {
+        this.bakeTerrain();
+      }
+
+      this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+      if (this.cachedTerrainCanvas) {
+        this.context.drawImage(this.cachedTerrainCanvas, 0, 0);
+      } else {
+        this.game.grid.cells.forEach(cell => this.bakeCell(cell, this.context));
+      }
+
+      // Hide reachable highlights while animating to avoid visual noise
+      if (!this.game.isAnimating()) {
+        const reachable = this.game.getReachableCells();
+        if (reachable && reachable.length) {
+          reachable.forEach(cell => this.drawReachableHighlight(cell));
+        }
+      }
+
+      this.game.objectives.forEach((objective, index) => this.drawObjective(objective, index));
+      this.drawParticles();
+      this.game.livingUnits.forEach(unit => this.drawUnit(unit));
+      this.drawTargets();
+      this.drawImpacts();
+      this.drawAirMissions();
+
+      if (t0) {
+        this.recordPerf(nowTime() - t0);
+      }
+    }
+
+    recordPerf(duration) {
+      if (!this.perfStats) {
+        this.perfStats = { count: 0, total: 0, worst: 0, last: 0 };
+      }
+      this.perfStats.count++;
+      this.perfStats.total += duration;
+      this.perfStats.last = duration;
+      if (duration > this.perfStats.worst) this.perfStats.worst = duration;
+    }
+
+    getPerfReport() {
+      if (!this.perfStats || !this.perfStats.count) return 'No perf data';
+      const avg = (this.perfStats.total / this.perfStats.count).toFixed(2);
+      const worst = this.perfStats.worst.toFixed(2);
+      const last = this.perfStats.last.toFixed(2);
+      return `Frames: ${this.perfStats.count}, Last: ${last}ms, Avg: ${avg}ms, Worst: ${worst}ms`;
     }
 
     drawObjective(objective, index) {
@@ -271,6 +354,8 @@
       });
     }
   }
+
+  BattlefieldRenderer.DEBUG_PERF = false;
 
   class StoryIntro {
     constructor(root) {
@@ -543,7 +628,10 @@
       this.airMissions = [];
       this.impacts = [];
       this.impactDuration = 900;
-      this.assets = new AssetStore(scenario.assets, () => this.render());
+      this.assets = new AssetStore(scenario.assets, () => {
+        this.invalidateTerrainCache();
+        this.render();
+      });
       this.renderer = new BattlefieldRenderer(canvas, this);
       this.ui = new GameUI(this);
       this.ai = new TacticalAI(this);
@@ -553,12 +641,17 @@
       this.animRafId = null;
       this.lastAnimTime = 0;
       this.particlePool = this.createParticlePool();
+      this.cachedReachableCells = null;
+      this.cachedReachableKeys = new Set();
+      this.debugPerf = !!options.debugPerf;
     }
 
     start() {
       this.canvas.width = this.scenario.map.width;
       this.canvas.height = this.scenario.map.height;
       this.ui.initialize();
+      this.invalidateTerrainCache();
+      this.invalidateReachableCache();
       this.canvas.addEventListener('click', event => this.handleClick(event));
       if (!isHeadless) {
         window.addEventListener('keydown', () => {
@@ -594,10 +687,32 @@
       return this.scenario.terrainTypes[terrainId]?.movementCost || 1;
     }
 
-    reachableCells() {
+    invalidateTerrainCache() {
+      this.renderer?.invalidateTerrainCache();
+    }
+
+    invalidateReachableCache() {
+      this.cachedReachableCells = null;
+      this.cachedReachableKeys.clear();
+    }
+
+    getReachableCells() {
+      if (this.cachedReachableCells !== null) {
+        return this.cachedReachableCells;
+      }
       const unit = this.selected;
-      if (!unit || unit.movementPoints <= 0 || unit.faction !== this.activeFaction) return [];
-      return [...this.buildMovementMap(unit).values()].filter(node => node.cost > 0).map(node => node.cell);
+      if (!unit || unit.movementPoints <= 0 || unit.faction !== this.activeFaction) {
+        this.cachedReachableCells = [];
+        this.cachedReachableKeys.clear();
+        return this.cachedReachableCells;
+      }
+      this.cachedReachableCells = [...this.buildMovementMap(unit).values()].filter(node => node.cost > 0).map(node => node.cell);
+      this.cachedReachableKeys = new Set(this.cachedReachableCells.map(cell => this.grid.key(cell)));
+      return this.cachedReachableCells;
+    }
+
+    reachableCells() {
+      return this.getReachableCells();
     }
 
     buildMovementMap(unit) {
@@ -658,12 +773,13 @@
         }
         return this.attack(this.selected, clickedUnit);
       }
-      if (this.selected && !clickedUnit && this.reachableCells().some(item => this.grid.key(item) === this.grid.key(cell))) this.move(this.selected, cell);
+      if (this.selected && !clickedUnit && this.getReachableCells().some(item => this.grid.key(item) === this.grid.key(cell))) this.move(this.selected, cell);
     }
 
-    select(unit) { this.selected = unit; this.ui.log(`Selected ${unit.id}.`); this.update(); }
+    select(unit) { this.selected = unit; this.invalidateReachableCache(); this.ui.log(`Selected ${unit.id}.`); this.update(); }
 
     move(unit, destination) {
+      this.invalidateReachableCache();
       const route = this.pathTo(unit, destination);
       if (!route || !route.cells.length) return;
       const startingPoints = unit.movementPoints;
@@ -730,6 +846,7 @@
         cancelAnimationFrame(this.animRafId);
         this.animRafId = null;
       }
+      this.invalidateReachableCache();
       this.resolveAnimationWaiters();
       this.render();
     }
@@ -895,6 +1012,7 @@
           anim.renderX = anim.waypoints[anim.numSegments].x;
           anim.renderY = anim.waypoints[anim.numSegments].y;
           anim.finished = true;
+          this.invalidateReachableCache();
           return true;
         }
         const u = settleElapsed / settleDur;
@@ -967,6 +1085,7 @@
           anim.renderY = anim.waypoints[N].y;
           anim.bobY = 0;
           anim.finished = true;
+          this.invalidateReachableCache();
           return true;
         }
       }
@@ -996,6 +1115,7 @@
       if (hit) { target.health = Math.max(0, target.health - damage); this.showImpact(target); }
       if (!target.health) {
         this.stopUnitAnimation(target);
+        this.invalidateReachableCache();
         this.ui.log(`${target.id} destroyed.`);
       }
     }
@@ -1044,6 +1164,7 @@
       if (this.isAnimating()) this.skipAnimations();
       if (this.gameOver || this.cinematicRunning || (this.aiRunning && !fromAI)) return;
       this.selected = null;
+      this.invalidateReachableCache();
       const currentIndex = this.scenario.turnOrder.indexOf(this.activeFaction);
       const nextIndex = (currentIndex + 1) % this.scenario.turnOrder.length;
       if (nextIndex === 0) this.turn += 1;
@@ -1119,6 +1240,7 @@
         this.ui.log(`CAS strike hits ${target.id} (${Math.round(hitChance * 100)}% adjusted chance) for ${damage} damage.`);
         if (!target.health) {
           this.stopUnitAnimation(target);
+          this.invalidateReachableCache();
           this.ui.log(`${target.id} destroyed by precision air attack.`);
         }
       } else {
@@ -1247,5 +1369,5 @@
     }
   }
 
-  global.HexWar = { HexGrid, HexWarGame, TacticalAI, MapViewport, ModalDialog, StoryIntro, MOVE_ANIM };
+  global.HexWar = { HexGrid, HexWarGame, TacticalAI, MapViewport, ModalDialog, StoryIntro, MOVE_ANIM, BattlefieldRenderer };
 }(typeof window !== 'undefined' ? window : globalThis));
