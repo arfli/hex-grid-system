@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Korean War Sprite - Chinese People's Volunteer Army (CPV) Infantry
+  Viewpoint: Top-Down Overhead (Base orientation facing North / Up)
+
+  Palette (Chinese CPV - Quilted Winter Uniform, Snow & Terrain Readable):
+    uniform-base:  #A39A62 (Quilted cotton-padded khaki-yellow uniform)
+    uniform-shade: #766E45 (Deep quilted fold & rear shade)
+    uniform-hi:    #B8AF76 (Padded shoulder highlight)
+    fur-cap-base:  #6A5238 (Winter earflap cap brown crown)
+    fur-cap-shade: #4B3926 (Cap rear shade)
+    fur-edge:      #A68B66 (Light tan fur front bolster & side earflaps)
+    pouch-base:    #8B7A4F (Canvas chest pouches & blanket roll)
+    pouch-shade:   #635636 (Webbing & pack shade)
+    wood-stock:    #634126 (Rifle/SMG wooden stock)
+    metal-base:    #1F2224 (Weapon black metal)
+    metal-hi:      #3E4448 (Metallic receiver highlight)
+    skin-base:     #C79B72 (Hands skin tone hint)
+    outline:       #151612 (Dark 1.7px figure outline)
+    shadow:        #0E100C (Soft contact shadow, opacity 0.30)
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <title>Chinese People's Volunteer Army (CPV) - Ambush Pose (Squad)</title>
+  <desc>Original top-down tactical wargame SVG sprite of a Chinese People's Volunteer Army (CPV) infantry squad in ambush pose.</desc>
+  <style>
+    :root {
+      --uniform-base: #A39A62;
+      --uniform-shade: #766E45;
+      --uniform-hi: #B8AF76;
+      --fur-cap-base: #6A5238;
+      --fur-cap-shade: #4B3926;
+      --fur-edge: #A68B66;
+      --pouch-base: #8B7A4F;
+      --pouch-shade: #635636;
+      --wood-stock: #634126;
+      --metal-base: #1F2224;
+      --metal-hi: #3E4448;
+      --skin-base: #C79B72;
+      --foliage-1: #4E6334;
+      --foliage-2: #6E7D44;
+      --outline: #151612;
+      --shadow: #0E100C;
+    }
+    .o {
+      stroke: var(--outline);
+      stroke-width: 1.65;
+      stroke-linejoin: round;
+      stroke-linecap: round;
+    }
+    .ot {
+      stroke: var(--outline);
+      stroke-width: 1.25;
+      stroke-linejoin: round;
+      stroke-linecap: round;
+    }
+  </style>
+  <defs>
+    <g id="shadow">
+      <ellipse cx="1.8" cy="2.6" rx="11.8" ry="7.4" fill="var(--shadow)" fill-opacity="0.28"/>
+    </g>
+
+    <!-- Muzzle flash star polygon -->
+    <g id="muzzle-flash">
+      <polygon points="0,-7.5 1.6,-2.4 5.8,-4.2 2.4,-0.4 6.2,2.2 1.5,1.8 0,6.2 -1.5,1.8 -6.2,2.2 -2.4,-0.4 -5.8,-4.2 -1.6,-2.4" fill="#F28C28" class="ot"/>
+      <polygon points="0,-4.8 1.0,-1.4 3.6,-2.4 1.4,0.0 3.4,1.4 0.8,1.0 0,3.6 -0.8,1.0 -3.4,1.4 -1.4,0.0 -3.6,-2.4 -1.0,-1.4" fill="#FFF3A1"/>
+    </g>
+
+    <!-- Dropped bolt-action rifle / SMG for fallen pose -->
+    <g id="dropped-weapon">
+      <ellipse cx="0.8" cy="1.2" rx="2.4" ry="9.5" fill="var(--shadow)" fill-opacity="0.26"/>
+      <rect x="-1.1" y="-3.5" width="2.2" height="11.0" rx="0.8" fill="var(--wood-stock)" class="o"/>
+      <rect x="-0.7" y="-10.5" width="1.4" height="8.5" rx="0.5" fill="var(--metal-base)" class="ot"/>
+      <rect x="-0.9" y="-4.5" width="1.8" height="3.8" rx="0.4" fill="var(--metal-base)" class="ot"/>
+      <path d="M0.9,-3.2 L2.6,-3.2" stroke="var(--metal-hi)" stroke-width="1.1" stroke-linecap="round"/>
+    </g>
+
+    <!-- Camouflage brush / grass tuft cluster -->
+    <g id="camo-tuft">
+      <path d="M-4.5,1.0 L-6.8,-2.8 L-2.8,-0.5 L-1.2,-4.2 L1.0,-0.8 L4.2,-3.6 L3.2,0.6 Z" fill="var(--foliage-1)" class="ot"/>
+      <path d="M-2.5,1.4 L-3.8,-1.6 L0.0,-2.8 L2.6,-1.2 L1.8,1.4 Z" fill="var(--foliage-2)"/>
+    </g>
+
+    <!-- 1. Ambush Prone Rifleman behind low earth/brush mound with camo tufts -->
+    <g id="soldier-base">
+      <use href="#shadow"/>
+      <!-- Low earth/stone cover mound in front of soldier -->
+      <path d="M-11.5,-5.2 C-8.5,-9.2 8.5,-9.2 11.5,-5.2 C8.5,-3.6 -8.5,-3.6 -11.5,-5.2 Z" fill="var(--brown-shade)" class="o"/>
+      <use href="#camo-tuft" transform="translate(-5.5, -6.2) scale(0.85)"/>
+      <use href="#camo-tuft" transform="translate(5.8, -6.0) scale(0.85) rotate(12)"/>
+      <!-- Tucked prone legs/boots behind torso -->
+      <rect x="-7.2" y="5.2" width="4.2" height="5.5" rx="1.8" transform="rotate(14 -5.1 8.0)" fill="var(--brown-cloth)" class="o"/>
+      <rect x="3.2" y="5.0" width="4.2" height="5.5" rx="1.8" transform="rotate(-16 5.3 7.8)" fill="var(--brown-cloth)" class="o"/>
+      <!-- Flattened low-silhouette prone torso -->
+      <path d="M-11.4,0.8 C-11.4,-2.6 -7.2,-4.2 0.0,-4.2 C7.2,-4.2 11.4,-2.6 11.4,0.8 C11.4,4.0 7.6,5.8 0.0,5.8 C-7.6,5.8 -11.4,4.0 -11.4,0.8 Z" fill="var(--uniform-base)" class="o"/>
+      <path d="M-9.6,1.8 C-8.0,4.2 -4.2,5.0 0.0,5.0 C4.2,5.0 8.0,4.2 9.6,1.8 Z" fill="var(--uniform-shade)"/>
+      <!-- Prone elbows braced wide -->
+      <path d="M-11.2,0.4 C-12.2,-3.2 -8.8,-6.8 -2.4,-8.6 L-0.4,-6.2 C-5.0,-4.4 -6.8,-1.8 -6.8,1.0 Z" fill="var(--uniform-base)" class="o"/>
+      <path d="M11.2,0.6 C12.0,-2.6 8.8,-5.8 3.0,-6.8 L1.4,-4.0 C5.4,-3.0 6.8,-1.0 6.8,1.4 Z" fill="var(--uniform-base)" class="o"/>
+      <ellipse cx="-1.2" cy="-7.8" rx="1.8" ry="1.4" fill="var(--skin-base)" class="ot"/>
+      <ellipse cx="2.0" cy="-5.2" rx="1.8" ry="1.4" fill="var(--skin-base)" class="ot"/>
+      <!-- Rifle aimed dead ahead resting over cover mound -->
+      <g transform="rotate(-2 0 -8)">
+        <rect x="-1.0" y="-6.2" width="2.2" height="6.8" rx="0.7" fill="var(--wood-stock)" class="o"/>
+        <rect x="-0.6" y="-17.2" width="1.4" height="11.5" rx="0.5" fill="var(--metal-base)" class="ot"/>
+      </g>
+      <!-- Camo foliage tufts on back -->
+      <use href="#camo-tuft" transform="translate(-4.2, 3.6) rotate(-18) scale(0.9)"/>
+      <use href="#camo-tuft" transform="translate(4.4, 3.8) rotate(22) scale(0.9)"/>
+      
+      <!-- CPV winter fur-flap cap (ushanka with distinct protruding side earflaps) -->
+      <!-- Left & Right protruding earflaps -->
+      <ellipse cx="-6.6" cy="1.0" rx="2.2" ry="3.4" transform="rotate(-12 -6.6 1.0)" fill="var(--fur-edge)" class="o"/>
+      <ellipse cx="6.6" cy="1.0" rx="2.2" ry="3.4" transform="rotate(12 6.6 1.0)" fill="var(--fur-edge)" class="o"/>
+      <!-- Front upright fur bolster flap -->
+      <rect x="-4.8" y="-5.2" width="9.6" height="3.4" rx="1.6" fill="var(--fur-edge)" class="o"/>
+      <!-- Brown cotton-padded cap dome -->
+      <path d="M-5.8,1.4 C-5.8,-1.8 -3.5,-3.6 0.0,-3.6 C3.5,-3.6 5.8,-1.8 5.8,1.4 C5.8,4.5 3.6,6.2 0.0,6.2 C-3.6,6.2 -5.8,4.5 -5.8,1.4 Z" fill="var(--fur-cap-base)" class="o"/>
+      <path d="M-4.8,2.2 C-4.0,4.4 -2.2,5.4 0.0,5.4 C2.2,5.4 4.0,4.4 4.8,2.2 C3.4,3.5 1.8,4.0 0.0,4.0 C-1.8,4.0 -3.4,3.5 -4.8,2.2 Z" fill="var(--fur-cap-shade)"/>
+      <ellipse cx="0.0" cy="-0.4" rx="3.0" ry="1.8" fill="#826748"/>
+      <!-- Camo foliage tuft on cap/head -->
+      <use href="#camo-tuft" transform="translate(0.0, 0.2) scale(0.8)"/>
+    </g>
+
+    <!-- 2. Ambush SMG Gunner (Low crouch behind brush with drum SMG aimed forward) -->
+    <g id="soldier-smg">
+      <use href="#shadow"/>
+      <path d="M-10.8,-5.0 C-7.8,-8.8 7.8,-8.8 10.8,-5.0 Z" fill="var(--brown-shade)" class="o"/>
+      <use href="#camo-tuft" transform="translate(0, -6.2) scale(0.9)"/>
+      <rect x="-6.6" y="4.8" width="4.0" height="5.0" rx="1.6" transform="rotate(10 -4.6 7.3)" fill="var(--brown-cloth)" class="o"/>
+      <rect x="2.8" y="4.8" width="4.0" height="5.0" rx="1.6" transform="rotate(-12 4.8 7.3)" fill="var(--brown-cloth)" class="o"/>
+      <path d="M-11.0,0.8 C-11.0,-2.6 -7.0,-4.2 0.0,-4.2 C7.0,-4.2 11.0,-2.6 11.0,0.8 C11.0,4.0 7.2,5.6 0.0,5.6 C-7.2,5.6 -11.0,4.0 -11.0,0.8 Z" fill="var(--uniform-base)" class="o"/>
+      <path d="M-10.8,0.4 C-11.6,-3.0 -8.4,-6.4 -2.2,-8.2 L-0.4,-5.8 C-4.8,-4.0 -6.4,-1.6 -6.4,1.0 Z" fill="var(--uniform-base)" class="o"/>
+      <path d="M10.8,0.6 C11.6,-2.4 8.4,-5.4 2.8,-6.4 L1.4,-3.8 C5.0,-2.8 6.4,-0.8 6.4,1.4 Z" fill="var(--uniform-base)" class="o"/>
+      <ellipse cx="-1.2" cy="-7.4" rx="1.8" ry="1.4" fill="var(--skin-base)" class="ot"/>
+      <ellipse cx="1.8" cy="-4.8" rx="1.8" ry="1.4" fill="var(--skin-base)" class="ot"/>
+      <g transform="rotate(3 0 -7)">
+        <rect x="-1.1" y="-5.5" width="2.2" height="5.8" rx="0.8" fill="var(--wood-stock)" class="o"/>
+        <circle cx="-2.0" cy="-6.8" r="2.4" fill="var(--metal-base)" class="o"/>
+        <rect x="-0.8" y="-14.2" width="1.6" height="8.8" rx="0.5" fill="var(--metal-base)" class="o"/>
+      </g>
+      <use href="#camo-tuft" transform="translate(0, 3.8) scale(0.95)"/>
+      
+      <!-- CPV winter fur-flap cap (ushanka with distinct protruding side earflaps) -->
+      <!-- Left & Right protruding earflaps -->
+      <ellipse cx="-6.6" cy="1.0" rx="2.2" ry="3.4" transform="rotate(-12 -6.6 1.0)" fill="var(--fur-edge)" class="o"/>
+      <ellipse cx="6.6" cy="1.0" rx="2.2" ry="3.4" transform="rotate(12 6.6 1.0)" fill="var(--fur-edge)" class="o"/>
+      <!-- Front upright fur bolster flap -->
+      <rect x="-4.8" y="-5.2" width="9.6" height="3.4" rx="1.6" fill="var(--fur-edge)" class="o"/>
+      <!-- Brown cotton-padded cap dome -->
+      <path d="M-5.8,1.4 C-5.8,-1.8 -3.5,-3.6 0.0,-3.6 C3.5,-3.6 5.8,-1.8 5.8,1.4 C5.8,4.5 3.6,6.2 0.0,6.2 C-3.6,6.2 -5.8,4.5 -5.8,1.4 Z" fill="var(--fur-cap-base)" class="o"/>
+      <path d="M-4.8,2.2 C-4.0,4.4 -2.2,5.4 0.0,5.4 C2.2,5.4 4.0,4.4 4.8,2.2 C3.4,3.5 1.8,4.0 0.0,4.0 C-1.8,4.0 -3.4,3.5 -4.8,2.2 Z" fill="var(--fur-cap-shade)"/>
+      <ellipse cx="0.0" cy="-0.4" rx="3.0" ry="1.8" fill="#826748"/>
+      <use href="#camo-tuft" transform="translate(0.4, 0.0) rotate(8) scale(0.78)"/>
+    </g>
+
+    <!-- 3. Ambush LMG Gunner (Bipod deployed on mound, pan-fed LMG) -->
+    <g id="soldier-lmg">
+      <ellipse cx="2.0" cy="2.8" rx="12.6" ry="7.8" fill="var(--shadow)" fill-opacity="0.30"/>
+      <path d="M-12.5,-5.4 C-9.0,-9.6 9.0,-9.6 12.5,-5.4 Z" fill="var(--brown-shade)" class="o"/>
+      <use href="#camo-tuft" transform="translate(-6.2, -6.4) scale(0.9)"/>
+      <use href="#camo-tuft" transform="translate(6.2, -6.4) scale(0.9)"/>
+      <path d="M-12.0,1.0 C-12.0,-2.6 -7.6,-4.4 0.0,-4.4 C7.6,-4.4 12.0,-2.6 12.0,1.0 C12.0,4.4 8.0,6.2 0.0,6.2 C-8.0,6.2 -12.0,4.4 -12.0,1.0 Z" fill="var(--uniform-base)" class="o"/>
+      <path d="M-11.6,0.4 C-12.4,-3.2 -9.0,-6.8 -2.6,-8.8 L-0.4,-6.2 C-5.2,-4.4 -7.2,-1.8 -7.2,1.0 Z" fill="var(--uniform-base)" class="o"/>
+      <path d="M11.6,0.6 C12.4,-2.6 9.0,-5.8 3.2,-6.8 L1.6,-4.0 C5.8,-3.0 7.2,-1.0 7.2,1.4 Z" fill="var(--uniform-base)" class="o"/>
+      <!-- LMG on bipod -->
+      <path d="M-0.4,-14.5 L-4.2,-11.6 M0.8,-14.5 L4.6,-11.6" stroke="var(--metal-base)" stroke-width="1.5" stroke-linecap="round"/>
+      <rect x="-1.1" y="-6.0" width="2.4" height="6.5" rx="0.8" fill="var(--wood-stock)" class="o"/>
+      <rect x="-0.9" y="-17.5" width="2.0" height="11.8" rx="0.6" fill="var(--metal-base)" class="o"/>
+      <circle cx="0.1" cy="-9.2" r="3.2" fill="var(--metal-base)" class="o"/>
+      <use href="#camo-tuft" transform="translate(-4.6, 3.8) scale(0.9)"/>
+      <use href="#camo-tuft" transform="translate(4.6, 3.8) scale(0.9)"/>
+      
+      <!-- CPV winter fur-flap cap (ushanka with distinct protruding side earflaps) -->
+      <!-- Left & Right protruding earflaps -->
+      <ellipse cx="-6.6" cy="1.0" rx="2.2" ry="3.4" transform="rotate(-12 -6.6 1.0)" fill="var(--fur-edge)" class="o"/>
+      <ellipse cx="6.6" cy="1.0" rx="2.2" ry="3.4" transform="rotate(12 6.6 1.0)" fill="var(--fur-edge)" class="o"/>
+      <!-- Front upright fur bolster flap -->
+      <rect x="-4.8" y="-5.2" width="9.6" height="3.4" rx="1.6" fill="var(--fur-edge)" class="o"/>
+      <!-- Brown cotton-padded cap dome -->
+      <path d="M-5.8,1.4 C-5.8,-1.8 -3.5,-3.6 0.0,-3.6 C3.5,-3.6 5.8,-1.8 5.8,1.4 C5.8,4.5 3.6,6.2 0.0,6.2 C-3.6,6.2 -5.8,4.5 -5.8,1.4 Z" fill="var(--fur-cap-base)" class="o"/>
+      <path d="M-4.8,2.2 C-4.0,4.4 -2.2,5.4 0.0,5.4 C2.2,5.4 4.0,4.4 4.8,2.2 C3.4,3.5 1.8,4.0 0.0,4.0 C-1.8,4.0 -3.4,3.5 -4.8,2.2 Z" fill="var(--fur-cap-shade)"/>
+      <ellipse cx="0.0" cy="-0.4" rx="3.0" ry="1.8" fill="#826748"/>
+      <use href="#camo-tuft" transform="translate(0, 0.2) scale(0.82)"/>
+    </g>
+  </defs>
+  <!-- Wide irregular crescent ambush line with camouflage and open gaps -->
+  <g id="squad">
+    <use href="#soldier-base" transform="translate(28, 92) rotate(14) scale(0.98)"/>
+    <use href="#soldier-smg" transform="translate(68, 126) rotate(8)"/>
+    <use href="#soldier-base" transform="translate(96, 86) rotate(4) scale(0.97)"/>
+    <use href="#soldier-lmg" transform="translate(128, 148) rotate(0) scale(1.04)"/>
+    <use href="#soldier-smg" transform="translate(158, 96) rotate(-5)"/>
+    <use href="#soldier-base" transform="translate(192, 134) rotate(-9) scale(0.99)"/>
+    <use href="#soldier-base" transform="translate(228, 94) rotate(-15) scale(0.98)"/>
+    <use href="#soldier-smg" transform="translate(82, 182) rotate(6)"/>
+    <use href="#soldier-base" transform="translate(174, 186) rotate(-8)"/>
+  </g>
+</svg>

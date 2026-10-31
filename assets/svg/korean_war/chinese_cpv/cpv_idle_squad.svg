@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Korean War Sprite - Chinese People's Volunteer Army (CPV) Infantry
+  Viewpoint: Top-Down Overhead (Base orientation facing North / Up)
+
+  Palette (Chinese CPV - Quilted Winter Uniform, Snow & Terrain Readable):
+    uniform-base:  #A39A62 (Quilted cotton-padded khaki-yellow uniform)
+    uniform-shade: #766E45 (Deep quilted fold & rear shade)
+    uniform-hi:    #B8AF76 (Padded shoulder highlight)
+    fur-cap-base:  #6A5238 (Winter earflap cap brown crown)
+    fur-cap-shade: #4B3926 (Cap rear shade)
+    fur-edge:      #A68B66 (Light tan fur front bolster & side earflaps)
+    pouch-base:    #8B7A4F (Canvas chest pouches & blanket roll)
+    pouch-shade:   #635636 (Webbing & pack shade)
+    wood-stock:    #634126 (Rifle/SMG wooden stock)
+    metal-base:    #1F2224 (Weapon black metal)
+    metal-hi:      #3E4448 (Metallic receiver highlight)
+    skin-base:     #C79B72 (Hands skin tone hint)
+    outline:       #151612 (Dark 1.7px figure outline)
+    shadow:        #0E100C (Soft contact shadow, opacity 0.30)
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <title>Chinese People's Volunteer Army (CPV) - Idle Pose (Squad)</title>
+  <desc>Original top-down tactical wargame SVG sprite of a Chinese People's Volunteer Army (CPV) infantry squad in idle pose.</desc>
+  <style>
+    :root {
+      --uniform-base: #A39A62;
+      --uniform-shade: #766E45;
+      --uniform-hi: #B8AF76;
+      --fur-cap-base: #6A5238;
+      --fur-cap-shade: #4B3926;
+      --fur-edge: #A68B66;
+      --pouch-base: #8B7A4F;
+      --pouch-shade: #635636;
+      --wood-stock: #634126;
+      --metal-base: #1F2224;
+      --metal-hi: #3E4448;
+      --skin-base: #C79B72;
+      --foliage-1: #4E6334;
+      --foliage-2: #6E7D44;
+      --outline: #151612;
+      --shadow: #0E100C;
+    }
+    .o {
+      stroke: var(--outline);
+      stroke-width: 1.65;
+      stroke-linejoin: round;
+      stroke-linecap: round;
+    }
+    .ot {
+      stroke: var(--outline);
+      stroke-width: 1.25;
+      stroke-linejoin: round;
+      stroke-linecap: round;
+    }
+  </style>
+  <defs>
+    <g id="shadow">
+      <ellipse cx="2.2" cy="4.2" rx="11.0" ry="8.4" fill="var(--shadow)" fill-opacity="0.30"/>
+    </g>
+
+    <!-- Muzzle flash star polygon -->
+    <g id="muzzle-flash">
+      <polygon points="0,-7.5 1.6,-2.4 5.8,-4.2 2.4,-0.4 6.2,2.2 1.5,1.8 0,6.2 -1.5,1.8 -6.2,2.2 -2.4,-0.4 -5.8,-4.2 -1.6,-2.4" fill="#F28C28" class="ot"/>
+      <polygon points="0,-4.8 1.0,-1.4 3.6,-2.4 1.4,0.0 3.4,1.4 0.8,1.0 0,3.6 -0.8,1.0 -3.4,1.4 -1.4,0.0 -3.6,-2.4 -1.0,-1.4" fill="#FFF3A1"/>
+    </g>
+
+    <!-- Dropped bolt-action rifle / SMG for fallen pose -->
+    <g id="dropped-weapon">
+      <ellipse cx="0.8" cy="1.2" rx="2.4" ry="9.5" fill="var(--shadow)" fill-opacity="0.26"/>
+      <rect x="-1.1" y="-3.5" width="2.2" height="11.0" rx="0.8" fill="var(--wood-stock)" class="o"/>
+      <rect x="-0.7" y="-10.5" width="1.4" height="8.5" rx="0.5" fill="var(--metal-base)" class="ot"/>
+      <rect x="-0.9" y="-4.5" width="1.8" height="3.8" rx="0.4" fill="var(--metal-base)" class="ot"/>
+      <path d="M0.9,-3.2 L2.6,-3.2" stroke="var(--metal-hi)" stroke-width="1.1" stroke-linecap="round"/>
+    </g>
+
+    <!-- 1. Idle Base Rifleman (Standing relaxed, bolt-action rifle held low across front) -->
+    <g id="soldier-base">
+      <use href="#shadow"/>
+      <rect x="-6.2" y="6.8" width="3.6" height="3.8" rx="1.5" fill="#2A2823" class="ot"/>
+      <rect x="2.8" y="6.4" width="3.6" height="3.8" rx="1.5" fill="#2A2823" class="ot"/>
+      
+      <!-- CPV horseshoe blanket roll & canvas field pack -->
+      <path d="M-9.2,1.5 C-9.8,6.8 -5.8,9.2 0.0,9.2 C5.8,9.2 9.8,6.8 9.2,1.5" fill="none" stroke="var(--pouch-base)" stroke-width="3.4" stroke-linecap="round"/>
+      <path d="M-9.2,1.5 C-9.8,6.8 -5.8,9.2 0.0,9.2 C5.8,9.2 9.8,6.8 9.2,1.5" fill="none" stroke="var(--outline)" stroke-width="1.2" stroke-linecap="round"/>
+      <rect x="-5.8" y="-3.2" width="11.6" height="3.2" rx="1.0" fill="var(--pouch-base)" class="ot"/>
+      <!-- Relaxed rounded shoulders -->
+      <path d="M-10.8,1.2 C-10.8,-2.4 -6.8,-3.8 0.0,-3.8 C6.8,-3.8 10.8,-2.4 10.8,1.2 C10.8,4.8 7.2,6.4 0.0,6.4 C-7.2,6.4 -10.8,4.8 -10.8,1.2 Z" fill="var(--uniform-base)" class="o"/>
+      <path d="M-9.2,2.2 C-7.8,4.6 -4.2,5.5 0.0,5.5 C4.2,5.5 7.8,4.6 9.2,2.2 C7.0,3.6 3.8,4.0 0.0,4.0 C-3.8,4.0 -7.0,3.6 -9.2,2.2 Z" fill="var(--uniform-shade)"/>
+      <ellipse cx="-6.2" cy="-0.2" rx="3.0" ry="1.8" fill="var(--uniform-hi)"/>
+      <ellipse cx="6.2" cy="-0.2" rx="3.0" ry="1.8" fill="var(--uniform-hi)"/>
+      <!-- Arms folded forward holding rifle across waist -->
+      <path d="M-10.4,0.8 C-10.6,-2.5 -7.8,-4.8 -3.2,-5.4 L-1.8,-2.8 C-5.2,-2.2 -6.8,-0.6 -6.8,1.6 Z" fill="var(--uniform-base)" class="o"/>
+      <path d="M10.4,1.2 C10.6,-2.0 8.0,-4.4 3.4,-5.0 L2.0,-2.4 C5.4,-1.8 6.8,-0.2 6.8,2.0 Z" fill="var(--uniform-base)" class="o"/>
+      <ellipse cx="-2.4" cy="-4.2" rx="1.8" ry="1.4" fill="var(--skin-base)" class="ot"/>
+      <ellipse cx="2.6" cy="-3.6" rx="1.8" ry="1.4" fill="var(--skin-base)" class="ot"/>
+      <!-- Bolt-action rifle held diagonally across chest (-58 deg) -->
+      <g transform="translate(0, -4.2) rotate(-58)">
+        <rect x="-1.1" y="-4.5" width="2.2" height="11.5" rx="0.8" fill="var(--wood-stock)" class="o"/>
+        <rect x="-0.7" y="-12.0" width="1.4" height="8.5" rx="0.5" fill="var(--metal-base)" class="ot"/>
+        <rect x="-0.9" y="-5.0" width="1.8" height="3.6" rx="0.4" fill="var(--metal-hi)"/>
+      </g>
+      
+      <!-- CPV winter fur-flap cap (ushanka with distinct protruding side earflaps) -->
+      <!-- Left & Right protruding earflaps -->
+      <ellipse cx="-6.6" cy="1.0" rx="2.2" ry="3.4" transform="rotate(-12 -6.6 1.0)" fill="var(--fur-edge)" class="o"/>
+      <ellipse cx="6.6" cy="1.0" rx="2.2" ry="3.4" transform="rotate(12 6.6 1.0)" fill="var(--fur-edge)" class="o"/>
+      <!-- Front upright fur bolster flap -->
+      <rect x="-4.8" y="-5.2" width="9.6" height="3.4" rx="1.6" fill="var(--fur-edge)" class="o"/>
+      <!-- Brown cotton-padded cap dome -->
+      <path d="M-5.8,1.4 C-5.8,-1.8 -3.5,-3.6 0.0,-3.6 C3.5,-3.6 5.8,-1.8 5.8,1.4 C5.8,4.5 3.6,6.2 0.0,6.2 C-3.6,6.2 -5.8,4.5 -5.8,1.4 Z" fill="var(--fur-cap-base)" class="o"/>
+      <path d="M-4.8,2.2 C-4.0,4.4 -2.2,5.4 0.0,5.4 C2.2,5.4 4.0,4.4 4.8,2.2 C3.4,3.5 1.8,4.0 0.0,4.0 C-1.8,4.0 -3.4,3.5 -4.8,2.2 Z" fill="var(--fur-cap-shade)"/>
+      <ellipse cx="0.0" cy="-0.4" rx="3.0" ry="1.8" fill="#826748"/>
+    </g>
+
+    <!-- 2. Idle SMG Gunner (Weapon slung, smoking/resting) -->
+    <g id="soldier-smg">
+      <use href="#shadow"/>
+      <rect x="-6.0" y="6.4" width="3.6" height="3.8" rx="1.5" fill="#2A2823" class="ot"/>
+      <rect x="2.6" y="7.0" width="3.6" height="3.8" rx="1.5" fill="#2A2823" class="ot"/>
+      
+      <!-- Quilted seam lines + grenade/satchel bundle -->
+      <rect x="-7.4" y="4.0" width="14.8" height="6.0" rx="2.2" fill="var(--pouch-base)" class="o"/>
+      <rect x="6.2" y="2.2" width="4.4" height="5.4" rx="1.2" fill="var(--pouch-shade)" class="o"/>
+      <rect x="7.6" y="-1.2" width="1.6" height="3.8" rx="0.5" fill="var(--wood-stock)" class="ot"/>
+      <path d="M-10.6,1.2 C-10.6,-2.4 -6.6,-3.8 0.0,-3.8 C6.6,-3.8 10.6,-2.4 10.6,1.2 C10.6,4.8 7.0,6.4 0.0,6.4 C-7.0,6.4 -10.6,4.8 -10.6,1.2 Z" fill="var(--uniform-base)" class="o"/>
+      <path d="M-9.0,2.2 C-7.6,4.6 -4.0,5.5 0.0,5.5 C4.0,5.5 7.6,4.6 9.0,2.2 Z" fill="var(--uniform-shade)"/>
+      <!-- Left arm resting on knee, right hand near face with tiny cigarette detail -->
+      <path d="M-10.2,1.0 C-10.4,-2.0 -8.0,-4.2 -4.2,-4.6 L-3.0,-2.2 C-5.8,-1.8 -6.8,-0.4 -6.8,1.6 Z" fill="var(--uniform-base)" class="o"/>
+      <path d="M10.2,0.8 C10.4,-2.4 7.8,-4.8 3.2,-5.2 L1.8,-2.8 C5.0,-2.2 6.4,-0.8 6.4,1.4 Z" fill="var(--uniform-base)" class="o"/>
+      <ellipse cx="-3.6" cy="-3.6" rx="1.8" ry="1.4" fill="var(--skin-base)" class="ot"/>
+      <ellipse cx="2.4" cy="-4.2" rx="1.8" ry="1.4" fill="var(--skin-base)" class="ot"/>
+      <!-- Tiny cigarette & ember -->
+      <rect x="1.8" y="-6.8" width="1.1" height="2.6" fill="#ECEAE2" class="ot"/>
+      <circle cx="2.35" cy="-7.0" r="0.8" fill="#E85D1A"/>
+      <!-- PPSh / Type 50 SMG with round drum held at low angle (-42 deg) -->
+      <g transform="translate(-1.5, -3.5) rotate(-42)">
+        <rect x="-1.2" y="-3.2" width="2.4" height="8.5" rx="0.9" fill="var(--wood-stock)" class="o"/>
+        <circle cx="-2.2" cy="-3.8" r="2.5" fill="var(--metal-base)" class="o"/>
+        <rect x="-0.9" y="-9.8" width="1.8" height="7.0" rx="0.6" fill="var(--metal-base)" class="o"/>
+      </g>
+      
+      <!-- CPV winter fur-flap cap (ushanka with distinct protruding side earflaps) -->
+      <!-- Left & Right protruding earflaps -->
+      <ellipse cx="-6.6" cy="1.0" rx="2.2" ry="3.4" transform="rotate(-12 -6.6 1.0)" fill="var(--fur-edge)" class="o"/>
+      <ellipse cx="6.6" cy="1.0" rx="2.2" ry="3.4" transform="rotate(12 6.6 1.0)" fill="var(--fur-edge)" class="o"/>
+      <!-- Front upright fur bolster flap -->
+      <rect x="-4.8" y="-5.2" width="9.6" height="3.4" rx="1.6" fill="var(--fur-edge)" class="o"/>
+      <!-- Brown cotton-padded cap dome -->
+      <path d="M-5.8,1.4 C-5.8,-1.8 -3.5,-3.6 0.0,-3.6 C3.5,-3.6 5.8,-1.8 5.8,1.4 C5.8,4.5 3.6,6.2 0.0,6.2 C-3.6,6.2 -5.8,4.5 -5.8,1.4 Z" fill="var(--fur-cap-base)" class="o"/>
+      <path d="M-4.8,2.2 C-4.0,4.4 -2.2,5.4 0.0,5.4 C2.2,5.4 4.0,4.4 4.8,2.2 C3.4,3.5 1.8,4.0 0.0,4.0 C-1.8,4.0 -3.4,3.5 -4.8,2.2 Z" fill="var(--fur-cap-shade)"/>
+      <ellipse cx="0.0" cy="-0.4" rx="3.0" ry="1.8" fill="#826748"/>
+    </g>
+
+    <!-- 3. Idle LMG Gunner (DP-28 / Type 26 LMG resting on bipod at rest) -->
+    <g id="soldier-lmg">
+      <ellipse cx="2.4" cy="4.6" rx="12.2" ry="8.8" fill="var(--shadow)" fill-opacity="0.32"/>
+      <rect x="-6.8" y="7.2" width="3.8" height="4.0" rx="1.5" fill="#2A2823" class="ot"/>
+      <rect x="3.0" y="6.8" width="3.8" height="4.0" rx="1.5" fill="#2A2823" class="ot"/>
+      
+      <!-- CPV horseshoe blanket roll & canvas field pack -->
+      <path d="M-9.2,1.5 C-9.8,6.8 -5.8,9.2 0.0,9.2 C5.8,9.2 9.8,6.8 9.2,1.5" fill="none" stroke="var(--pouch-base)" stroke-width="3.4" stroke-linecap="round"/>
+      <path d="M-9.2,1.5 C-9.8,6.8 -5.8,9.2 0.0,9.2 C5.8,9.2 9.8,6.8 9.2,1.5" fill="none" stroke="var(--outline)" stroke-width="1.2" stroke-linecap="round"/>
+      <rect x="-5.8" y="-3.2" width="11.6" height="3.2" rx="1.0" fill="var(--pouch-base)" class="ot"/>
+      <path d="M-11.8,1.4 C-11.8,-2.4 -7.5,-4.0 0.0,-4.0 C7.5,-4.0 11.8,-2.4 11.8,1.4 C11.8,5.2 7.8,6.8 0.0,6.8 C-7.8,6.8 -11.8,5.2 -11.8,1.4 Z" fill="var(--uniform-base)" class="o"/>
+      <path d="M-10.2,2.4 C-8.6,4.8 -4.6,5.8 0.0,5.8 C4.6,5.8 8.6,4.8 10.2,2.4 Z" fill="var(--uniform-shade)"/>
+      <path d="M-11.2,1.0 C-11.4,-2.4 -8.4,-5.0 -3.4,-5.8 L-1.8,-3.0 C-5.6,-2.2 -7.4,-0.4 -7.4,1.8 Z" fill="var(--uniform-base)" class="o"/>
+      <path d="M11.2,1.2 C11.4,-2.0 8.6,-4.6 3.6,-5.2 L2.0,-2.6 C5.8,-1.8 7.4,0.0 7.4,2.0 Z" fill="var(--uniform-base)" class="o"/>
+      <ellipse cx="-2.4" cy="-4.6" rx="1.9" ry="1.5" fill="var(--skin-base)" class="ot"/>
+      <ellipse cx="2.8" cy="-4.0" rx="1.9" ry="1.5" fill="var(--skin-base)" class="ot"/>
+      <!-- DP-28 LMG with top pan magazine held across front (-35 deg) -->
+      <g transform="translate(0, -4.8) rotate(-35)">
+        <rect x="-1.2" y="-3.5" width="2.4" height="9.5" rx="0.8" fill="var(--wood-stock)" class="o"/>
+        <rect x="-1.0" y="-12.5" width="2.0" height="9.2" rx="0.6" fill="var(--metal-base)" class="o"/>
+        <circle cx="0.0" cy="-6.2" r="3.2" fill="var(--metal-base)" class="o"/>
+        <circle cx="0.0" cy="-6.2" r="1.4" fill="var(--metal-hi)"/>
+      </g>
+      
+      <!-- CPV winter fur-flap cap (ushanka with distinct protruding side earflaps) -->
+      <!-- Left & Right protruding earflaps -->
+      <ellipse cx="-6.6" cy="1.0" rx="2.2" ry="3.4" transform="rotate(-12 -6.6 1.0)" fill="var(--fur-edge)" class="o"/>
+      <ellipse cx="6.6" cy="1.0" rx="2.2" ry="3.4" transform="rotate(12 6.6 1.0)" fill="var(--fur-edge)" class="o"/>
+      <!-- Front upright fur bolster flap -->
+      <rect x="-4.8" y="-5.2" width="9.6" height="3.4" rx="1.6" fill="var(--fur-edge)" class="o"/>
+      <!-- Brown cotton-padded cap dome -->
+      <path d="M-5.8,1.4 C-5.8,-1.8 -3.5,-3.6 0.0,-3.6 C3.5,-3.6 5.8,-1.8 5.8,1.4 C5.8,4.5 3.6,6.2 0.0,6.2 C-3.6,6.2 -5.8,4.5 -5.8,1.4 Z" fill="var(--fur-cap-base)" class="o"/>
+      <path d="M-4.8,2.2 C-4.0,4.4 -2.2,5.4 0.0,5.4 C2.2,5.4 4.0,4.4 4.8,2.2 C3.4,3.5 1.8,4.0 0.0,4.0 C-1.8,4.0 -3.4,3.5 -4.8,2.2 Z" fill="var(--fur-cap-shade)"/>
+      <ellipse cx="0.0" cy="-0.4" rx="3.0" ry="1.8" fill="#826748"/>
+    </g>
+  </defs>
+  <g id="squad">
+    <use href="#soldier-base" transform="translate(116, 56) rotate(-12)"/>
+    <use href="#soldier-smg" transform="translate(64, 82) rotate(38) scale(0.98)"/>
+    <use href="#soldier-base" transform="translate(178, 76) rotate(-28)"/>
+    <use href="#soldier-lmg" transform="translate(128, 114) rotate(8) scale(1.04)"/>
+    <use href="#soldier-smg" transform="translate(56, 142) rotate(-52)"/>
+    <use href="#soldier-base" transform="translate(194, 134) rotate(64) scale(0.99)"/>
+    <use href="#soldier-base" transform="translate(94, 174) rotate(118)"/>
+    <use href="#soldier-smg" transform="translate(154, 182) rotate(-18) scale(1.01)"/>
+    <use href="#soldier-base" transform="translate(122, 212) rotate(5)"/>
+  </g>
+</svg>
