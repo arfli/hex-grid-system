@@ -116,12 +116,16 @@
       this.context = canvas.getContext('2d');
       this.game = game;
       this.cachedTerrainCanvas = null;
+      this.cachedStaticScene = null;
       this.terrainCacheDirty = true;
+      this.crispCache = new Map();
       this.perfStats = null;
     }
 
     invalidateTerrainCache() {
       this.terrainCacheDirty = true;
+      if (this.crispCache) this.crispCache.clear();
+      this.cachedStaticScene = null;
     }
 
     createOffscreenCanvas(width, height) {
@@ -139,22 +143,78 @@
       return null;
     }
 
+    getOptimizedCrispSprite(assetId, targetW, targetH) {
+      if (!this.crispCache) this.crispCache = new Map();
+      const image = this.game.assets.get(assetId);
+      if (!image?.complete || !image.naturalWidth || !image.naturalHeight) return null;
+
+      const naturalW = image.naturalWidth;
+      const naturalH = image.naturalHeight;
+      const renderScale = this.game.renderScale || 1;
+      const targetPhysicalW = Math.round(targetW * renderScale);
+      // High-density pre-downscaled sprite (~180px or ~360px for high zoom)
+      // Stepping down from 1066px to ~180px in 2 halving stages keeps fine outlines,
+      // roadwheels, hatch rims, and digital camo contrast razor sharp without 16x bilinear blur.
+      const targetCacheW = targetPhysicalW > 180 ? 360 : 180;
+      if (naturalW <= targetCacheW * 1.25 || isHeadless) return image;
+
+      const cacheKey = `${assetId}_${targetCacheW}`;
+      if (this.crispCache.has(cacheKey)) {
+        return this.crispCache.get(cacheKey);
+      }
+
+      let cur = image;
+      let cw = naturalW;
+      let ch = naturalH;
+      while (cw * 0.55 >= targetCacheW) {
+        const nw = Math.max(targetCacheW, Math.round(cw * 0.5));
+        const nh = Math.max(1, Math.round(ch * (nw / cw)));
+        const c = this.createOffscreenCanvas(nw, nh);
+        const ctx = c && typeof c.getContext === 'function' ? c.getContext('2d') : null;
+        if (!ctx) return image;
+        ctx.imageSmoothingEnabled = true;
+        if ('imageSmoothingQuality' in ctx) ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(cur, 0, 0, nw, nh);
+        cur = c;
+        cw = nw;
+        ch = nh;
+      }
+
+      const finalH = Math.max(1, Math.round(naturalH * (targetCacheW / naturalW)));
+      const finalCanvas = this.createOffscreenCanvas(targetCacheW, finalH);
+      const finalCtx = finalCanvas && typeof finalCanvas.getContext === 'function' ? finalCanvas.getContext('2d') : null;
+      if (!finalCtx) return image;
+      finalCtx.imageSmoothingEnabled = true;
+      if ('imageSmoothingQuality' in finalCtx) finalCtx.imageSmoothingQuality = 'high';
+      finalCtx.drawImage(cur, 0, 0, targetCacheW, finalH);
+
+      this.crispCache.set(cacheKey, finalCanvas);
+      return finalCanvas;
+    }
+
     bakeTerrain() {
       if (!this.canvas) {
         this.terrainCacheDirty = false;
         return;
       }
-      const w = this.canvas.width;
-      const h = this.canvas.height;
-      if (!this.cachedTerrainCanvas || this.cachedTerrainCanvas.width !== w || this.cachedTerrainCanvas.height !== h) {
-        this.cachedTerrainCanvas = this.createOffscreenCanvas(w, h);
+      const logicalW = this.game.logicalWidth || this.canvas.width;
+      const logicalH = this.game.logicalHeight || this.canvas.height;
+      const renderScale = this.game.renderScale || 1;
+      const physW = Math.round(logicalW * renderScale);
+      const physH = Math.round(logicalH * renderScale);
+
+      if (!this.cachedTerrainCanvas || this.cachedTerrainCanvas.width !== physW || this.cachedTerrainCanvas.height !== physH) {
+        this.cachedTerrainCanvas = this.createOffscreenCanvas(physW, physH);
       }
       if (!this.cachedTerrainCanvas || typeof this.cachedTerrainCanvas.getContext !== 'function') return;
       const ctx = this.cachedTerrainCanvas.getContext('2d');
       if (!ctx) return;
-      ctx.clearRect(0, 0, w, h);
+      if (typeof ctx.setTransform === 'function') {
+        ctx.setTransform(renderScale, 0, 0, renderScale, 0, 0);
+      }
+      ctx.clearRect(0, 0, logicalW, logicalH);
       this.game.grid.cells.forEach(cell => this.bakeCell(cell, ctx));
-      this.bakeTopographicOverlay(ctx, w, h);
+      this.bakeTopographicOverlay(ctx, logicalW, logicalH);
       this.terrainCacheDirty = false;
     }
 
@@ -413,6 +473,70 @@
       else if (fallbackColor) { ctx.fillStyle = fallbackColor; ctx.fillRect(x, y, width, height); }
     }
 
+    bakeStaticScene() {
+      if (!this.canvas) return;
+      const logicalW = this.game.logicalWidth || this.canvas.width;
+      const logicalH = this.game.logicalHeight || this.canvas.height;
+      const renderScale = this.game.renderScale || 1;
+      const physW = Math.round(logicalW * renderScale);
+      const physH = Math.round(logicalH * renderScale);
+
+      if (!this.cachedStaticScene || this.cachedStaticScene.width !== physW || this.cachedStaticScene.height !== physH) {
+        this.cachedStaticScene = this.createOffscreenCanvas(physW, physH);
+      }
+      if (!this.cachedStaticScene || typeof this.cachedStaticScene.getContext !== 'function') return;
+      const ctx = this.cachedStaticScene.getContext('2d');
+      if (!ctx) return;
+
+      if (typeof ctx.setTransform === 'function') {
+        ctx.setTransform(renderScale, 0, 0, renderScale, 0, 0);
+      }
+      ctx.clearRect(0, 0, logicalW, logicalH);
+
+      if (this.terrainCacheDirty || !this.cachedTerrainCanvas) {
+        this.bakeTerrain();
+      }
+      if (this.cachedTerrainCanvas) {
+        ctx.drawImage(this.cachedTerrainCanvas, 0, 0, logicalW, logicalH);
+      }
+
+      this.game.objectives.forEach((objective, index) => this.drawObjective(objective, index, ctx));
+      this.drawTacticalDatalinks(ctx);
+
+      const animatingSet = new Set(this.game.animatingUnits);
+      this.game.livingUnits.forEach(unit => {
+        if (!animatingSet.has(unit)) {
+          this.drawUnit(unit, ctx);
+        }
+      });
+    }
+
+    drawAnimatedFrame(animatingUnits) {
+      if (!this.cachedStaticScene) {
+        this.draw();
+        return;
+      }
+      const logicalW = this.game.logicalWidth || this.canvas.width;
+      const logicalH = this.game.logicalHeight || this.canvas.height;
+      const renderScale = this.game.renderScale || 1;
+
+      if (typeof this.context.setTransform === 'function') {
+        this.context.setTransform(renderScale, 0, 0, renderScale, 0, 0);
+      }
+
+      // Blit entire static scene (terrain + 41 stationary units) in a single sub-millisecond GPU pass
+      this.context.drawImage(this.cachedStaticScene, 0, 0, logicalW, logicalH);
+
+      // Draw only the active moving unit(s)
+      animatingUnits.forEach(unit => this.drawUnit(unit));
+
+      // Dynamic particle & tracer passes
+      this.drawGroundParticles();
+      this.drawAirParticles();
+      this.drawTracers();
+      this.drawImpacts();
+    }
+
     draw() {
       const measure = BattlefieldRenderer.DEBUG_PERF || this.game.debugPerf;
       const t0 = measure ? nowTime() : 0;
@@ -421,10 +545,17 @@
         this.bakeTerrain();
       }
 
-      this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+      const renderScale = this.game.renderScale || 1;
+      const logicalW = this.game.logicalWidth || this.canvas.width;
+      const logicalH = this.game.logicalHeight || this.canvas.height;
+
+      if (typeof this.context.setTransform === 'function') {
+        this.context.setTransform(renderScale, 0, 0, renderScale, 0, 0);
+      }
+      this.context.clearRect(0, 0, logicalW, logicalH);
 
       if (this.cachedTerrainCanvas) {
-        this.context.drawImage(this.cachedTerrainCanvas, 0, 0);
+        this.context.drawImage(this.cachedTerrainCanvas, 0, 0, logicalW, logicalH);
       } else {
         this.game.grid.cells.forEach(cell => this.bakeCell(cell, this.context));
       }
@@ -471,8 +602,7 @@
       return `Frames: ${this.perfStats.count}, Last: ${last}ms, Avg: ${avg}ms, Worst: ${worst}ms`;
     }
 
-    drawObjective(objective, index) {
-      const ctx = this.context;
+    drawObjective(objective, index, ctx = this.context) {
       const center = this.game.grid.toPixel(objective);
       const size = this.game.grid.size;
       const scale = size / 54;
@@ -486,8 +616,7 @@
       ctx.fillText(String(index + 1), center.x, center.y - Math.round(29 * scale));
     }
 
-    drawTacticalDatalinks() {
-      const ctx = this.context;
+    drawTacticalDatalinks(ctx = this.context) {
       const living = this.game.livingUnits;
       ctx.save();
       ctx.lineWidth = 1.5;
@@ -591,8 +720,7 @@
       return { assetId, drawW, drawH, visibleHullH, centerShiftX };
     }
 
-    drawUnit(unit) {
-      const ctx = this.context;
+    drawUnit(unit, ctx = this.context) {
       const size = this.game.grid.size;
       const anim = unit.animState;
       const center = anim ? { x: anim.renderX, y: anim.renderY } : this.game.grid.toPixel(unit);
@@ -649,7 +777,12 @@
 
       const drawX = -metrics.drawW * (0.5 + metrics.centerShiftX);
       const drawY = -metrics.drawH * 0.5;
-      this.drawImage(metrics.assetId, drawX, drawY, metrics.drawW, metrics.drawH, '#333');
+      const crispSource = this.getOptimizedCrispSprite(metrics.assetId, metrics.drawW, metrics.drawH);
+      if (crispSource) {
+        ctx.drawImage(crispSource, drawX, drawY, metrics.drawW, metrics.drawH);
+      } else {
+        this.drawImage(metrics.assetId, drawX, drawY, metrics.drawW, metrics.drawH, '#333', ctx);
+      }
       ctx.restore();
 
       // 4. Health bar scaled to hex size (top of hex)
@@ -1119,11 +1252,20 @@
     }
 
     start() {
-      this.canvas.width = this.scenario.map.width;
-      this.canvas.height = this.scenario.map.height;
+      this.logicalWidth = this.scenario.map.width;
+      this.logicalHeight = this.scenario.map.height;
+      this.renderScale = isHeadless
+        ? 1
+        : Math.min(2, Math.max(1, (typeof window !== 'undefined' && window.devicePixelRatio) || 1));
+      if (this.canvas.dataset) {
+        this.canvas.dataset.logicalWidth = String(this.logicalWidth);
+        this.canvas.dataset.logicalHeight = String(this.logicalHeight);
+      }
+      this.canvas.width = Math.round(this.logicalWidth * this.renderScale);
+      this.canvas.height = Math.round(this.logicalHeight * this.renderScale);
       if (this.canvas.style) {
-        this.canvas.style.width = `${this.scenario.map.width}px`;
-        this.canvas.style.height = `${this.scenario.map.height}px`;
+        this.canvas.style.width = `${this.logicalWidth}px`;
+        this.canvas.style.height = `${this.logicalHeight}px`;
       }
       this.ui.initialize();
       this.invalidateTerrainCache();
@@ -1307,7 +1449,9 @@
       }
       if (this.gameOver || this.aiRunning || this.cinematicRunning || this.activeFaction !== this.playerFaction) return;
       const bounds = this.canvas.getBoundingClientRect();
-      const cell = this.grid.closestCell((event.clientX - bounds.left) * this.canvas.width / bounds.width, (event.clientY - bounds.top) * this.canvas.height / bounds.height);
+      const logicalW = this.logicalWidth || this.scenario.map.width;
+      const logicalH = this.logicalHeight || this.scenario.map.height;
+      const cell = this.grid.closestCell((event.clientX - bounds.left) * logicalW / bounds.width, (event.clientY - bounds.top) * logicalH / bounds.height);
       if (!cell) return;
       const clickedUnit = this.unitAt(cell);
       if (clickedUnit?.faction === this.activeFaction) return this.select(clickedUnit);
@@ -1420,6 +1564,9 @@
       if (this.animRafId) {
         cancelAnimationFrame(this.animRafId);
         this.animRafId = null;
+      }
+      if (this.renderer) {
+        this.renderer.cachedStaticScene = null;
       }
       this.invalidateReachableCache();
       this.resolveAnimationWaiters();
@@ -1743,9 +1890,17 @@
 
       if (!this.isAnimating()) {
         this.resolveAnimationWaiters();
+        if (this.renderer) {
+          this.renderer.cachedStaticScene = null;
+        }
+        this.render();
+      } else {
+        if (this.renderer && this.renderer.cachedStaticScene) {
+          this.renderer.drawAnimatedFrame(this.animatingUnits);
+        } else {
+          this.render();
+        }
       }
-
-      this.render();
     }
 
     startUnitAnimation(unit, startCell, steps) {
@@ -1786,6 +1941,9 @@
 
       if (!this.animatingUnits.includes(unit)) {
         this.animatingUnits.push(unit);
+      }
+      if (this.renderer) {
+        this.renderer.bakeStaticScene();
       }
       this.startAnimationLoop();
       this.ui.update();
@@ -2583,8 +2741,8 @@
 
     setZoom(scale) {
       const oldScale = this.scale;
-      const baseW = this.canvas.width;
-      const baseH = this.canvas.height;
+      const baseW = Number(this.canvas.dataset?.logicalWidth) || 3700;
+      const baseH = Number(this.canvas.dataset?.logicalHeight) || 1850;
       const contentCenterX = (this.viewport.scrollLeft + this.viewport.clientWidth / 2) / oldScale;
       const contentCenterY = (this.viewport.scrollTop + this.viewport.clientHeight / 2) / oldScale;
       this.scale = Math.max(0.35, Math.min(2.5, scale));
@@ -2597,8 +2755,8 @@
     }
 
     fitMap() {
-      const baseW = this.canvas.width;
-      const baseH = this.canvas.height;
+      const baseW = Number(this.canvas.dataset?.logicalWidth) || 3700;
+      const baseH = Number(this.canvas.dataset?.logicalHeight) || 1850;
       const horizontalScale = (this.viewport.clientWidth - 36) / baseW;
       const verticalScale = (this.viewport.clientHeight - 36) / baseH;
       this.setZoom(Math.min(horizontalScale, verticalScale, 1));
