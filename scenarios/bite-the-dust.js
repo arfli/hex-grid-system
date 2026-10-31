@@ -15,8 +15,8 @@
     title: 'Bite the Dust',
     kicker: 'The western approaches to Ahvaz',
     turnSeconds: 30,
-    turnLimit: 14,
-    map: { columns:52, rows:32, hexSize:30, metersPerHex:100, width:2800, height:1500 },
+    turnLimit: 18,
+    map: { columns:68, rows:38, hexSize:30, metersPerHex:100, width:3700, height:1850 },
 
     environment: {
       visibilityMeters:3500,
@@ -41,9 +41,9 @@
     },
 
     airSupport:{
-      id:'apache-cas', faction:'US', turn:3, image:'apache', durationMs:6500,
+      id:'apache-cas', faction:'US', turn:4, image:'apache', durationMs:6500,
       weapons:['hellfire_atgm', 'm230_30'],
-      strikes:3, baseHitChance:0.76, airDefenseModifier:0.62, minimumDamage:4, maximumDamage:7
+      strikes:4, baseHitChance:0.76, airDefenseModifier:0.62, minimumDamage:4, maximumDamage:7
     },
 
     factions: {
@@ -52,7 +52,7 @@
     },
     turnOrder:['US', 'COALITION'],
     ai: {
-      US:{ strategy:'breakthrough', goalColumn:45 },
+      US:{ strategy:'breakthrough', goalColumn:60 },
       COALITION:{ strategy:'defensive-fire' }
     },
 
@@ -66,19 +66,51 @@
       crater:{ label:'Missile crater', movementCost:2, defense:0 }
     },
     terrain: {
-      field:[...block(12,2,10,7), ...block(29,1,8,6), ...block(8,22,13,8), ...block(28,24,9,7)],
-      road:[...row(0,51,15), ...row(0,51,16)],
-      canal:column(26,0,31),
-      bridge:[...row(26,26,15), ...row(26,26,16)],
-      urban:[...block(43,2,9,28), ...block(39,7,4,6), ...block(40,21,3,7)],
-      trench:[...column(37,3,13), ...column(38,18,29), ...row(35,39,14), ...row(36,40,17)],
-      crater:[axial(10,15),axial(14,16),axial(19,15),axial(23,16),axial(31,15),axial(34,16),axial(40,15),axial(41,16)]
+      field:[
+        ...block(10, 2, 14, 12),
+        ...block(10, 23, 14, 12),
+        ...block(38, 2, 8, 12),
+        ...block(38, 23, 8, 12)
+      ],
+      road:[
+        ...row(0, 67, 18),
+        ...row(0, 67, 19),
+        ...row(35, 56, 8),
+        ...row(35, 56, 29)
+      ],
+      canal:column(34, 0, 37),
+      bridge:[
+        ...row(34, 34, 8),
+        ...row(34, 34, 9),
+        ...row(34, 34, 18),
+        ...row(34, 34, 19),
+        ...row(34, 34, 28),
+        ...row(34, 34, 29)
+      ],
+      urban:[
+        ...block(56, 1, 12, 36),
+        ...block(53, 6, 3, 8),
+        ...block(53, 23, 3, 8)
+      ],
+      trench:[
+        ...column(48, 2, 15),
+        ...column(48, 22, 35),
+        ...row(45, 52, 16),
+        ...row(45, 52, 21),
+        ...column(52, 5, 14),
+        ...column(52, 23, 32)
+      ],
+      crater:[
+        axial(12, 18), axial(16, 19), axial(22, 18),
+        axial(28, 19), axial(32, 18), axial(38, 19),
+        axial(44, 18), axial(47, 19), axial(50, 18)
+      ]
     },
 
     objectives:[
-      objective('Northern Breach',47,6),
-      objective('Ahvaz Highway',47,16),
-      objective('Southern Breach',47,26)
+      objective('Northern Breach (Kianpars Approach)', 62, 8),
+      objective('Central Highway Junction', 62, 19),
+      objective('Southern Breach (Khorramshahr Junction)', 62, 30)
     ],
 
     unitTypes: {
@@ -155,37 +187,71 @@
     },
 
     units: [
-      // US Task Force 1-64 Armor: A Company (Saber Platoon)
-      place('SABER-1','US','abrams',4,7,{ crewSkill:1.06, morale:0.84, facing:0, company:'A Co, 1-64 AR', platoon:'1st Platoon (Saber)', role:'Platoon Leader', isLeader:true, commandRadius:7 }),
-      place('SABER-2','US','abrams',5,12,{ crewSkill:1.03, morale:0.82, facing:0, company:'A Co, 1-64 AR', platoon:'1st Platoon (Saber)', role:'Wingman' }),
-      place('SABER-3','US','abrams',4,18,{ crewSkill:1.04, morale:0.86, facing:0, company:'A Co, 1-64 AR', platoon:'1st Platoon (Saber)', role:'Platoon Sergeant' }),
-      place('SABER-4','US','abrams',5,24,{ crewSkill:1.00, morale:0.80, facing:0, company:'A Co, 1-64 AR', platoon:'1st Platoon (Saber)', role:'Wingman' }),
+      // US Task Force 1-64 Armor ("Desert Rogues", A Company)
+      // 1st Platoon (Saber Platoon - 4x M1A1 Abrams)
+      place('SABER-1','US','abrams',4,8,{ crewSkill:1.06, morale:0.86, facing:0, company:'A Co, 1-64 AR', platoon:'1st Platoon (Saber)', role:'Platoon Leader', isLeader:true, commandRadius:7 }),
+      place('SABER-2','US','abrams',5,12,{ crewSkill:1.03, morale:0.84, facing:0, company:'A Co, 1-64 AR', platoon:'1st Platoon (Saber)', role:'Wingman' }),
+      place('SABER-3','US','abrams',4,15,{ crewSkill:1.04, morale:0.85, facing:0, company:'A Co, 1-64 AR', platoon:'1st Platoon (Saber)', role:'Platoon Sergeant' }),
+      place('SABER-4','US','abrams',5,17,{ crewSkill:1.00, morale:0.82, facing:0, company:'A Co, 1-64 AR', platoon:'1st Platoon (Saber)', role:'Wingman' }),
 
-      // US Task Force 3-15 Infantry: B Company (Ranger Mech Platoon)
-      place('RANGER-1','US','bradley',7,9,{ crewSkill:1.02, morale:0.84, facing:0, company:'B Co, 3-15 IN', platoon:'2nd Mech Platoon (Ranger)', role:'Mech Platoon Leader', isLeader:true, commandRadius:7 }),
-      place('RANGER-2','US','bradley',7,15,{ crewSkill:1.00, morale:0.82, facing:0, company:'B Co, 3-15 IN', platoon:'2nd Mech Platoon (Ranger)', role:'Wingman' }),
-      place('RANGER-3','US','bradley',7,21,{ crewSkill:1.01, morale:0.83, facing:0, company:'B Co, 3-15 IN', platoon:'2nd Mech Platoon (Ranger)', role:'Platoon Sergeant' }),
+      // 2nd Platoon (Dagger Platoon - 4x M1A1 Abrams)
+      place('DAGGER-1','US','abrams',4,20,{ crewSkill:1.05, morale:0.85, facing:0, company:'A Co, 1-64 AR', platoon:'2nd Platoon (Dagger)', role:'Platoon Leader', isLeader:true, commandRadius:7 }),
+      place('DAGGER-2','US','abrams',5,23,{ crewSkill:1.02, morale:0.83, facing:0, company:'A Co, 1-64 AR', platoon:'2nd Platoon (Dagger)', role:'Wingman' }),
+      place('DAGGER-3','US','abrams',4,26,{ crewSkill:1.03, morale:0.84, facing:0, company:'A Co, 1-64 AR', platoon:'2nd Platoon (Dagger)', role:'Platoon Sergeant' }),
+      place('DAGGER-4','US','abrams',5,30,{ crewSkill:1.00, morale:0.81, facing:0, company:'A Co, 1-64 AR', platoon:'2nd Platoon (Dagger)', role:'Wingman' }),
 
-      // Coalition 124th Armored Brigade: 1st Armored Company (Dragon Platoon)
-      place('DRAGON-1','COALITION','type99',35,6,{ crewSkill:1.02, morale:1.05, facing:Math.PI, company:'1st Tank Co, 124th Bde', platoon:'1st Armored Platoon (Dragon)', role:'Platoon Leader', isLeader:true, commandRadius:7 }),
-      place('DRAGON-2','COALITION','type99',36,13,{ crewSkill:1.00, morale:1.04, facing:Math.PI, company:'1st Tank Co, 124th Bde', platoon:'1st Armored Platoon (Dragon)', role:'Wingman' }),
-      place('DRAGON-3','COALITION','type99',36,22,{ crewSkill:0.98, morale:1.04, facing:Math.PI, company:'1st Tank Co, 124th Bde', platoon:'1st Armored Platoon (Dragon)', role:'Platoon Sergeant' }),
-      place('DRAGON-4','COALITION','type99',35,28,{ crewSkill:1.01, morale:1.05, facing:Math.PI, company:'1st Tank Co, 124th Bde', platoon:'1st Armored Platoon (Dragon)', role:'Wingman' }),
+      // US Task Force 3-15 Infantry ("China Recon", B Company)
+      // 1st Mech Platoon (Ranger Platoon - 4x M2A2 Bradley)
+      place('RANGER-1','US','bradley',7,7,{ crewSkill:1.02, morale:0.85, facing:0, company:'B Co, 3-15 IN', platoon:'1st Mech Platoon (Ranger)', role:'Mech Platoon Leader', isLeader:true, commandRadius:7 }),
+      place('RANGER-2','US','bradley',8,10,{ crewSkill:1.00, morale:0.83, facing:0, company:'B Co, 3-15 IN', platoon:'1st Mech Platoon (Ranger)', role:'Wingman' }),
+      place('RANGER-3','US','bradley',7,13,{ crewSkill:1.01, morale:0.84, facing:0, company:'B Co, 3-15 IN', platoon:'1st Mech Platoon (Ranger)', role:'Platoon Sergeant' }),
+      place('RANGER-4','US','bradley',8,16,{ crewSkill:0.99, morale:0.82, facing:0, company:'B Co, 3-15 IN', platoon:'1st Mech Platoon (Ranger)', role:'Wingman' }),
 
-      // Coalition 124th Armored Brigade: 2nd Mech Company (Jade Platoon)
-      place('JADE-1','COALITION','zbd04',38,9,{ crewSkill:0.98, morale:1.02, facing:Math.PI, company:'2nd Mech Co, 124th Bde', platoon:'2nd Mech Platoon (Jade)', role:'Mech Platoon Leader', isLeader:true, commandRadius:7 }),
-      place('JADE-2','COALITION','zbd04',38,25,{ crewSkill:0.96, morale:1.02, facing:Math.PI, company:'2nd Mech Co, 124th Bde', platoon:'2nd Mech Platoon (Jade)', role:'Wingman' }),
+      // 2nd Mech Platoon (Ghost Platoon - 4x M2A2 Bradley)
+      place('GHOST-1','US','bradley',7,21,{ crewSkill:1.03, morale:0.85, facing:0, company:'B Co, 3-15 IN', platoon:'2nd Mech Platoon (Ghost)', role:'Mech Platoon Leader', isLeader:true, commandRadius:7 }),
+      place('GHOST-2','US','bradley',8,24,{ crewSkill:1.00, morale:0.83, facing:0, company:'B Co, 3-15 IN', platoon:'2nd Mech Platoon (Ghost)', role:'Wingman' }),
+      place('GHOST-3','US','bradley',7,27,{ crewSkill:1.02, morale:0.84, facing:0, company:'B Co, 3-15 IN', platoon:'2nd Mech Platoon (Ghost)', role:'Platoon Sergeant' }),
+      place('GHOST-4','US','bradley',8,31,{ crewSkill:0.98, morale:0.81, facing:0, company:'B Co, 3-15 IN', platoon:'2nd Mech Platoon (Ghost)', role:'Wingman' }),
 
-      // Coalition Fortified ATGM Defense Network (IRGC)
-      place('IRGC-1','COALITION','irgc',37,4,{ crewSkill:0.96, morale:1.12, facing:Math.PI, company:'IRGC Ahvaz Defense Force', platoon:'3rd ATGM Defense Section', role:'Section Leader', isLeader:true, commandRadius:8 }),
-      place('IRGC-2','COALITION','irgc',37,14,{ crewSkill:1.00, morale:1.12, facing:Math.PI, company:'IRGC Ahvaz Defense Force', platoon:'3rd ATGM Defense Section', role:'ATGM Team 2' }),
-      place('IRGC-3','COALITION','irgc',38,19,{ crewSkill:0.98, morale:1.10, facing:Math.PI, company:'IRGC Ahvaz Defense Force', platoon:'3rd ATGM Defense Section', role:'ATGM Team 3' }),
-      place('IRGC-4','COALITION','irgc',38,29,{ crewSkill:0.94, morale:1.10, facing:Math.PI, company:'IRGC Ahvaz Defense Force', platoon:'3rd ATGM Defense Section', role:'ATGM Team 4' }),
+      // Recon Cavalry Section (2x M2A2 Bradley Scouts)
+      place('RECON-1','US','bradley',10,14,{ crewSkill:1.05, morale:0.88, facing:0, company:'HHC Recon Platoon', platoon:'Scout Section', role:'Lead Scout', isLeader:true, commandRadius:6 }),
+      place('RECON-2','US','bradley',10,23,{ crewSkill:1.03, morale:0.86, facing:0, company:'HHC Recon Platoon', platoon:'Scout Section', role:'Wing Scout' }),
 
-      // Coalition Local Popular Defense (Volunteer Infantry Squads)
-      place('VOL-1','COALITION','volunteers',40,11,{ crewSkill:0.78, morale:1.08, facing:Math.PI, company:'Khuzestan Popular Defense', platoon:'1st Volunteer Detachment', role:'Squad Leader', isLeader:true, commandRadius:6 }),
-      place('VOL-2','COALITION','volunteers',40,17,{ crewSkill:0.76, morale:1.08, facing:Math.PI, company:'Khuzestan Popular Defense', platoon:'1st Volunteer Detachment', role:'Rifle Squad 2' }),
-      place('VOL-3','COALITION','volunteers',40,24,{ crewSkill:0.74, morale:1.06, facing:Math.PI, company:'Khuzestan Popular Defense', platoon:'1st Volunteer Detachment', role:'Rifle Squad 3' })
+      // Coalition PLA 124th Armored Brigade: 1st Armored Company
+      // 1st Armored Platoon (Dragon Platoon - 4x ZTZ-99A MBT)
+      place('DRAGON-1','COALITION','type99',46,7,{ crewSkill:1.02, morale:1.05, facing:Math.PI, company:'1st Tank Co, 124th Bde', platoon:'1st Armored Platoon (Dragon)', role:'Platoon Leader', isLeader:true, commandRadius:7 }),
+      place('DRAGON-2','COALITION','type99',47,11,{ crewSkill:1.00, morale:1.04, facing:Math.PI, company:'1st Tank Co, 124th Bde', platoon:'1st Armored Platoon (Dragon)', role:'Wingman' }),
+      place('DRAGON-3','COALITION','type99',46,14,{ crewSkill:0.99, morale:1.04, facing:Math.PI, company:'1st Tank Co, 124th Bde', platoon:'1st Armored Platoon (Dragon)', role:'Platoon Sergeant' }),
+      place('DRAGON-4','COALITION','type99',47,17,{ crewSkill:1.01, morale:1.05, facing:Math.PI, company:'1st Tank Co, 124th Bde', platoon:'1st Armored Platoon (Dragon)', role:'Wingman' }),
+
+      // 2nd Armored Platoon (Tiger Platoon - 4x ZTZ-99A MBT)
+      place('TIGER-1','COALITION','type99',46,20,{ crewSkill:1.03, morale:1.05, facing:Math.PI, company:'1st Tank Co, 124th Bde', platoon:'2nd Armored Platoon (Tiger)', role:'Platoon Leader', isLeader:true, commandRadius:7 }),
+      place('TIGER-2','COALITION','type99',47,23,{ crewSkill:1.00, morale:1.04, facing:Math.PI, company:'1st Tank Co, 124th Bde', platoon:'2nd Armored Platoon (Tiger)', role:'Wingman' }),
+      place('TIGER-3','COALITION','type99',46,26,{ crewSkill:0.98, morale:1.04, facing:Math.PI, company:'1st Tank Co, 124th Bde', platoon:'2nd Armored Platoon (Tiger)', role:'Platoon Sergeant' }),
+      place('TIGER-4','COALITION','type99',47,30,{ crewSkill:1.00, morale:1.04, facing:Math.PI, company:'1st Tank Co, 124th Bde', platoon:'2nd Armored Platoon (Tiger)', role:'Wingman' }),
+
+      // Coalition PLA 124th Armored Brigade: 2nd Mech Company
+      // 1st Mech Platoon (Jade Platoon - 4x ZBD-04 IFV)
+      place('JADE-1','COALITION','zbd04',50,10,{ crewSkill:0.99, morale:1.02, facing:Math.PI, company:'2nd Mech Co, 124th Bde', platoon:'1st Mech Platoon (Jade)', role:'Mech Platoon Leader', isLeader:true, commandRadius:7 }),
+      place('JADE-2','COALITION','zbd04',51,15,{ crewSkill:0.97, morale:1.02, facing:Math.PI, company:'2nd Mech Co, 124th Bde', platoon:'1st Mech Platoon (Jade)', role:'Wingman' }),
+      place('JADE-3','COALITION','zbd04',50,22,{ crewSkill:0.98, morale:1.02, facing:Math.PI, company:'2nd Mech Co, 124th Bde', platoon:'1st Mech Platoon (Jade)', role:'Platoon Sergeant' }),
+      place('JADE-4','COALITION','zbd04',51,27,{ crewSkill:0.96, morale:1.02, facing:Math.PI, company:'2nd Mech Co, 124th Bde', platoon:'1st Mech Platoon (Jade)', role:'Wingman' }),
+
+      // Coalition Fortified ATGM Defense Network (IRGC 3rd Defense Section)
+      place('IRGC-1','COALITION','irgc',48,5,{ crewSkill:0.97, morale:1.12, facing:Math.PI, company:'IRGC Ahvaz Defense Force', platoon:'3rd ATGM Defense Section', role:'Section Leader', isLeader:true, commandRadius:8 }),
+      place('IRGC-2','COALITION','irgc',48,12,{ crewSkill:1.00, morale:1.12, facing:Math.PI, company:'IRGC Ahvaz Defense Force', platoon:'3rd ATGM Defense Section', role:'ATGM Team 2' }),
+      place('IRGC-3','COALITION','irgc',45,16,{ crewSkill:0.98, morale:1.10, facing:Math.PI, company:'IRGC Ahvaz Defense Force', platoon:'3rd ATGM Defense Section', role:'ATGM Team 3' }),
+      place('IRGC-4','COALITION','irgc',45,21,{ crewSkill:0.99, morale:1.10, facing:Math.PI, company:'IRGC Ahvaz Defense Force', platoon:'3rd ATGM Defense Section', role:'ATGM Team 4' }),
+      place('IRGC-5','COALITION','irgc',48,25,{ crewSkill:0.96, morale:1.10, facing:Math.PI, company:'IRGC Ahvaz Defense Force', platoon:'3rd ATGM Defense Section', role:'ATGM Team 5' }),
+      place('IRGC-6','COALITION','irgc',48,32,{ crewSkill:0.94, morale:1.10, facing:Math.PI, company:'IRGC Ahvaz Defense Force', platoon:'3rd ATGM Defense Section', role:'ATGM Team 6' }),
+
+      // Coalition Local Popular Defense (Khuzestan Volunteer Infantry Squads)
+      place('VOL-1','COALITION','volunteers',52,8,{ crewSkill:0.80, morale:1.08, facing:Math.PI, company:'Khuzestan Popular Defense', platoon:'1st Volunteer Detachment', role:'Squad Leader', isLeader:true, commandRadius:6 }),
+      place('VOL-2','COALITION','volunteers',52,13,{ crewSkill:0.77, morale:1.08, facing:Math.PI, company:'Khuzestan Popular Defense', platoon:'1st Volunteer Detachment', role:'Rifle Squad 2' }),
+      place('VOL-3','COALITION','volunteers',54,17,{ crewSkill:0.76, morale:1.06, facing:Math.PI, company:'Khuzestan Popular Defense', platoon:'1st Volunteer Detachment', role:'Rifle Squad 3' }),
+      place('VOL-4','COALITION','volunteers',54,20,{ crewSkill:0.78, morale:1.08, facing:Math.PI, company:'Khuzestan Popular Defense', platoon:'1st Volunteer Detachment', role:'Rifle Squad 4' }),
+      place('VOL-5','COALITION','volunteers',52,25,{ crewSkill:0.75, morale:1.06, facing:Math.PI, company:'Khuzestan Popular Defense', platoon:'1st Volunteer Detachment', role:'Rifle Squad 5' }),
+      place('VOL-6','COALITION','volunteers',52,30,{ crewSkill:0.73, morale:1.06, facing:Math.PI, company:'Khuzestan Popular Defense', platoon:'1st Volunteer Detachment', role:'Rifle Squad 6' })
     ],
 
     intro:{
@@ -206,7 +272,7 @@
       dateLine:'Fictional near-future scenario · Ahvaz approaches',
       situation:'After a rapid U.S. drive into Khuzestan meets little resistance, its lead armored regiment reaches the western outskirts of Ahvaz. Missile strikes have damaged the approach corridor, but a concealed Chinese–Iranian defensive belt remains operational. The U.S. formation has superior machinery but brittle morale and must break through before losses force withdrawal.',
       sides:{
-        US:'Command the armored spearhead. Preserve strength, cross the canal, and penetrate the eastern defensive belt before aggregate strength falls to 50%. An Apache formation arrives on turn 3 to provide CAS-guided precision strikes, but coalition air defenses reduce—and randomize—the chance of hitting each target.',
+        US:'Command the armored spearhead. Preserve strength, cross the canal, and penetrate the eastern defensive belt before aggregate strength falls to 50%. An Apache formation arrives on turn 4 to provide CAS-guided precision strikes, but coalition air defenses reduce—and randomize—the chance of hitting each target.',
         COALITION:'Command the combined defense. Use Chinese armor platoons, prepared IRGC positions, and volunteer platoons to hold the line or reduce the U.S. spearhead to half strength.'
       }
     },
@@ -224,14 +290,14 @@
       }
     },
 
-    missionHtml:'Scale: 1 counter = 1 individual vehicle or infantry squad/team. 1 hex = 100 m.<br><br><b>USA:</b> Breach the eastern defensive line. At 50% aggregate starting strength, the spearhead withdraws. Apache CAS arrives on turn 3, subject to coalition air defenses.<br><br><b>Alliance:</b> Prevent a breach and reduce the U.S. spearhead to half strength.',
+    missionHtml:'Scale: 1 counter = 1 individual vehicle or infantry squad/team. 1 hex = 100 m (Grid: 6.8 × 3.8 km).<br><br><b>USA:</b> Breach the eastern defensive line (Column 60+). At 50% aggregate starting strength, the spearhead withdraws. Apache CAS arrives on turn 4, subject to coalition air defenses.<br><br><b>Alliance:</b> Prevent a breach and reduce the U.S. spearhead to half strength.',
     openingLog:['Missile impacts walk across the Ahvaz highway—but the defense remains intact.','Unexpected contact: Chinese armor and Iranian prepared positions ahead.','U.S. cohesion is fragile. A 50% strength loss will force withdrawal.'],
 
     determineWinner(game) {
       const usUnits = game.units.filter(unit => unit.faction === 'US');
       const currentStrength = usUnits.reduce((sum, unit) => sum + unit.health, 0);
       const startingStrength = usUnits.reduce((sum, unit) => sum + unit.maxHealth, 0);
-      const breached = game.livingUnits.some(unit => unit.faction === 'US' && unit.q + Math.floor(unit.r / 2) >= 45);
+      const breached = game.livingUnits.some(unit => unit.faction === 'US' && unit.q + Math.floor(unit.r / 2) >= 60);
       if (breached) return 'US';
       if (currentStrength <= startingStrength * 0.5 || !game.hasLivingUnits('US')) return 'COALITION';
       if (game.turn > this.turnLimit) return 'COALITION';
