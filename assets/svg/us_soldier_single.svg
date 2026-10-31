@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  US Infantry Single Soldier - Top-Down Tactical Wargame Sprite
+  Orientation: Facing North (Up)
+  ViewBox: 0 0 64 64 (Soldier footprint ~48x62 px)
+
+  Palette (Standard Woodland / Olive Drab Variant):
+    uniform-base:  #5B6B3A (Olive drab field uniform)
+    uniform-shade: #435029 (Deep olive fold/rear shade)
+    uniform-hi:    #73864C (Upper shoulder sunlight highlight)
+    pack-base:     #3E4A2A (Darker webbing & tactical pack)
+    pack-shade:    #2B341D (Pack underside & pouch shade)
+    pack-hi:       #526139 (Pack flap & strap highlight)
+    helmet-base:   #4F5E33 (Kevlar helmet olive base)
+    helmet-shade:  #384422 (Helmet rear rim shade)
+    helmet-hi:     #6E8049 (Helmet crown highlight)
+    skin-base:     #C79B72 (Exposed hands skin tone)
+    skin-shade:    #A47953 (Knuckle/wrist shade)
+    rifle-base:    #1F2224 (Rifle black/parkerized metal)
+    rifle-hi:      #3E4448 (Receiver/barrel metallic edge)
+    boot-base:     #252822 (Combat boot leather)
+    outline:       #141712 (Dark 1.8px figure outline)
+    shadow:        #0D0F0C (Soft down-right contact shadow, opacity 0.30)
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <title>US Infantry Soldier (Single, Top-Down)</title>
+  <desc>Original overhead tactical wargame sprite of a single US infantry rifleman in olive drab uniform, helmet, webbing, and backpack, aiming a rifle north.</desc>
+
+  <style>
+    :root {
+      --uniform-base: #5B6B3A;
+      --uniform-shade: #435029;
+      --uniform-hi: #73864C;
+      --pack-base: #3E4A2A;
+      --pack-shade: #2B341D;
+      --pack-hi: #526139;
+      --helmet-base: #4F5E33;
+      --helmet-shade: #384422;
+      --helmet-hi: #6E8049;
+      --skin-base: #C79B72;
+      --skin-shade: #A47953;
+      --rifle-base: #1F2224;
+      --rifle-hi: #3E4448;
+      --boot-base: #252822;
+      --outline: #141712;
+      --shadow: #0D0F0C;
+    }
+    .outline {
+      stroke: var(--outline);
+      stroke-width: 1.8;
+      stroke-linejoin: round;
+      stroke-linecap: round;
+    }
+    .outline-thin {
+      stroke: var(--outline);
+      stroke-width: 1.4;
+      stroke-linejoin: round;
+      stroke-linecap: round;
+    }
+  </style>
+
+  <defs>
+    <!-- Soft contact shadow offset down-right -->
+    <g id="shadow">
+      <ellipse cx="35.5" cy="41.5" rx="21.5" ry="16.5" fill="var(--shadow)" fill-opacity="0.30"/>
+      <ellipse cx="34.5" cy="18.0" rx="5.5" ry="12.0" fill="var(--shadow)" fill-opacity="0.22"/>
+    </g>
+
+    <!-- Base single soldier figure centered at (32, 32) facing North -->
+    <g id="soldier-base">
+      <use href="#shadow"/>
+
+      <!-- Barely visible combat boots peeking from stride under pack/torso -->
+      <rect x="18.5" y="51.5" width="7.5" height="8.0" rx="3.2" fill="var(--boot-base)" class="outline"/>
+      <rect x="38.5" y="49.5" width="7.5" height="7.5" rx="3.2" fill="var(--boot-base)" class="outline"/>
+
+      <!-- Tactical Backpack / Rucksack behind torso -->
+      <g id="backpack">
+        <!-- Side sustainment pouches -->
+        <rect x="12.5" y="43.0" width="5.5" height="10.5" rx="2.2" fill="var(--pack-shade)" class="outline"/>
+        <rect x="46.0" y="43.0" width="5.5" height="10.5" rx="2.2" fill="var(--pack-shade)" class="outline"/>
+        <!-- Main rucksack body -->
+        <rect x="16.5" y="41.0" width="31.0" height="15.5" rx="4.5" fill="var(--pack-base)" class="outline"/>
+        <!-- Rucksack rear deep shade -->
+        <path d="M18.5,51.0 L45.5,51.0 C45.5,54.0 43.5,55.5 41.0,55.5 L23.0,55.5 C20.5,55.5 18.5,54.0 18.5,51.0 Z" fill="var(--pack-shade)"/>
+        <!-- Top flap highlight & straps -->
+        <rect x="19.5" y="42.2" width="25.0" height="6.0" rx="2.2" fill="var(--pack-hi)"/>
+        <rect x="23.0" y="41.5" width="3.2" height="14.2" rx="1.0" fill="var(--pack-shade)" class="outline-thin"/>
+        <rect x="37.8" y="41.5" width="3.2" height="14.2" rx="1.0" fill="var(--pack-shade)" class="outline-thin"/>
+      </g>
+
+      <!-- Left Support Arm reaching forward to rifle handguard -->
+      <g id="arm-left">
+        <path d="M10.5,35.5 C9.5,28.5 15.0,20.5 26.5,15.5 L31.0,20.0 C23.0,24.5 19.5,30.0 19.5,36.5 Z" fill="var(--uniform-base)" class="outline"/>
+        <!-- Outer sleeve highlight -->
+        <path d="M12.2,33.5 C12.0,28.0 16.5,21.8 26.0,17.2 L27.8,19.0 C20.0,23.2 16.2,28.5 16.0,34.0 Z" fill="var(--uniform-hi)"/>
+        <!-- Inner elbow shade -->
+        <path d="M19.5,35.5 C19.5,30.2 22.8,25.0 30.0,20.5 L28.2,18.8 C21.2,23.2 17.5,28.8 17.5,35.0 Z" fill="var(--uniform-shade)"/>
+      </g>
+
+      <!-- Right Trigger Arm reaching to rifle grip/stock -->
+      <g id="arm-right">
+        <path d="M53.5,36.0 C54.5,29.5 49.5,23.5 38.0,21.5 L35.0,27.0 C42.5,28.5 44.5,32.5 44.0,37.5 Z" fill="var(--uniform-base)" class="outline"/>
+        <!-- Upper sleeve highlight -->
+        <path d="M51.5,34.5 C52.0,29.5 48.0,25.0 38.8,23.2 L37.5,25.5 C44.5,27.0 47.8,30.5 47.8,35.0 Z" fill="var(--uniform-hi)"/>
+      </g>
+
+      <!-- Shoulders & Torso (Wide rounded silhouette) -->
+      <g id="torso">
+        <path d="M9.5,35.5 C9.5,28.5 17.5,25.5 32.0,25.5 C46.5,25.5 54.5,28.5 54.5,35.5 C54.5,42.5 47.5,45.5 32.0,45.5 C16.5,45.5 9.5,42.5 9.5,35.5 Z" fill="var(--uniform-base)" class="outline"/>
+        <!-- Rear torso shade -->
+        <path d="M12.0,37.5 C14.5,42.5 22.0,44.2 32.0,44.2 C42.0,44.2 49.5,42.5 52.0,37.5 C48.0,40.2 40.5,41.2 32.0,41.2 C23.5,41.2 16.0,40.2 12.0,37.5 Z" fill="var(--uniform-shade)"/>
+        <!-- Left & right upper shoulder highlights -->
+        <ellipse cx="18.5" cy="32.5" rx="6.5" ry="4.0" fill="var(--uniform-hi)"/>
+        <ellipse cx="45.5" cy="32.5" rx="6.5" ry="4.0" fill="var(--uniform-hi)"/>
+        <!-- Load-bearing tactical vest straps & front ammo pouches -->
+        <path d="M22.5,26.2 L25.5,26.2 L24.5,44.2 L21.0,44.2 Z" fill="var(--pack-base)" class="outline-thin"/>
+        <path d="M38.5,26.2 L41.5,26.2 L43.0,44.2 L39.5,44.2 Z" fill="var(--pack-base)" class="outline-thin"/>
+        <rect x="19.5" y="27.2" width="6.2" height="4.8" rx="1.2" fill="var(--pack-shade)" class="outline-thin"/>
+        <rect x="38.3" y="27.2" width="6.2" height="4.8" rx="1.2" fill="var(--pack-shade)" class="outline-thin"/>
+      </g>
+
+      <!-- Hands (Skin tone hint on hands only) -->
+      <g id="hands">
+        <!-- Left support hand on forend -->
+        <ellipse cx="29.5" cy="16.5" rx="3.6" ry="2.8" transform="rotate(-20 29.5 16.5)" fill="var(--skin-base)" class="outline-thin"/>
+        <path d="M27.5,17.2 C28.5,18.2 30.2,18.2 31.5,17.0" fill="none" stroke="var(--skin-shade)" stroke-width="1.2"/>
+        <!-- Right trigger hand on grip -->
+        <ellipse cx="35.5" cy="24.2" rx="3.4" ry="2.7" transform="rotate(15 35.5 24.2)" fill="var(--skin-base)" class="outline-thin"/>
+      </g>
+
+      <!-- Assault Rifle pointing North (slightly angled from right shoulder) -->
+      <g id="rifle" transform="rotate(-4 32 18)">
+        <!-- Curved Magazine protruding left -->
+        <path d="M29.8,17.5 L24.2,19.2 C23.6,19.5 23.5,21.5 24.4,22.2 L29.8,21.2 Z" fill="var(--rifle-base)" class="outline-thin"/>
+        <!-- Buttstock tucked into right shoulder -->
+        <rect x="30.2" y="23.5" width="4.2" height="7.5" rx="1.4" fill="var(--rifle-base)" class="outline-thin"/>
+        <!-- Upper/Lower Receiver -->
+        <rect x="29.6" y="15.0" width="5.2" height="9.2" rx="1.2" fill="var(--rifle-base)" class="outline"/>
+        <!-- Receiver top rail / metallic highlight -->
+        <rect x="31.3" y="15.8" width="1.8" height="7.4" rx="0.6" fill="var(--rifle-hi)"/>
+        <!-- Optic / Rear sight block -->
+        <rect x="30.4" y="18.2" width="3.6" height="3.2" rx="0.8" fill="var(--rifle-hi)" class="outline-thin"/>
+        <!-- Barrel Handguard -->
+        <rect x="30.2" y="8.5" width="4.0" height="7.0" rx="1.2" fill="var(--rifle-base)" class="outline"/>
+        <rect x="31.5" y="9.2" width="1.4" height="5.5" fill="var(--rifle-hi)"/>
+        <!-- Barrel & Flash Hider (pointing up to y=2) -->
+        <rect x="31.1" y="2.2" width="2.2" height="6.8" rx="0.8" fill="var(--rifle-base)" class="outline-thin"/>
+        <rect x="30.7" y="1.8" width="3.0" height="2.2" rx="0.6" fill="var(--rifle-base)" class="outline-thin"/>
+      </g>
+
+      <!-- Helmet (Rounded Kevlar helmet blob with darker rim, band, and crown highlight) -->
+      <g id="helmet">
+        <!-- Helmet base with ear flares and front brim -->
+        <path d="M20.0,34.5 C20.0,27.8 25.0,23.5 32.0,23.5 C39.0,23.5 44.0,27.8 44.0,34.5 C44.0,40.8 39.2,44.8 32.0,44.8 C24.8,44.8 20.0,40.8 20.0,34.5 Z" fill="var(--helmet-base)" class="outline"/>
+        <!-- Rear/lower helmet rim shade -->
+        <path d="M21.5,36.0 C22.5,41.0 26.8,43.5 32.0,43.5 C37.2,43.5 41.5,41.0 42.5,36.0 C39.8,39.2 36.2,40.6 32.0,40.6 C27.8,40.6 24.2,39.2 21.5,36.0 Z" fill="var(--helmet-shade)"/>
+        <!-- Helmet retention / camo band -->
+        <path d="M20.6,33.2 C24.2,31.5 28.0,30.8 32.0,30.8 C36.0,30.8 39.8,31.5 43.4,33.2 C43.6,34.5 43.5,35.4 43.2,36.2 C39.6,34.6 35.8,33.8 32.0,33.8 C28.2,33.8 24.4,34.6 20.8,36.2 C20.5,35.4 20.4,34.5 20.6,33.2 Z" fill="var(--pack-shade)"/>
+        <!-- Crown highlight -->
+        <ellipse cx="31.5" cy="29.5" rx="6.8" ry="4.5" fill="var(--helmet-hi)"/>
+        <ellipse cx="31.0" cy="28.5" rx="3.5" ry="2.2" fill="#829659"/>
+      </g>
+    </g>
+  </defs>
+
+  <!-- Render the single soldier -->
+  <use href="#soldier-base"/>
+</svg>

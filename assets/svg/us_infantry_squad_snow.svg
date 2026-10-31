@@ -1,0 +1,332 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  US Infantry Squad (Winter / Snow Camo Variant) - Top-Down Wargame Sprite
+  Orientation: Facing North (Up) with natural individual angle variations (+/- 14 deg)
+  ViewBox: 0 0 256 256 (Each soldier ~22-24 px wide)
+  Composition: 7 Riflemen (3 pose variations), 1 SAW/MG Gunner (bulkier), 1 Radio Operator (RTO pack + antenna)
+
+  Palette (Winter / Snow Overgarment Variant):
+    uniform-base:  #E6E9EA (Off-white winter overgarment)
+    uniform-shade: #BFC6C9 (Cool grey snow-fold & rear shade)
+    uniform-hi:    #F6F8F9 (Crisp white shoulder highlight)
+    camo-patch:    #9AA3A6 (Subtle alpine grey-olive disruptive snow camo)
+    pack-base:     #454F46 (Dark slate-olive webbing & winter rucksack for high contrast on snow)
+    pack-shade:    #2E3630 (Deep charcoal-olive pouch & strap shade)
+    pack-hi:       #5C675D (Pack top flap highlight)
+    helmet-base:   #ECEFF0 (White helmet snow cover)
+    helmet-shade:  #B8C0C4 (Helmet rear rim grey shade)
+    helmet-hi:     #FFFFFF (Pure white helmet crown highlight)
+    skin-base:     #C79B72 (Exposed finger/hand hint)
+    skin-shade:    #A47953 (Hand shade)
+    rifle-base:    #1F2224 (Rifle black/parkerized metal)
+    rifle-hi:      #3E4448 (Receiver/barrel metallic edge)
+    mg-box:        #3C463E (Dark olive-slate SAW ammo box drum)
+    radio-body:    #333B36 (Field radio chassis)
+    radio-hi:      #546058 (Radio top housing highlight)
+    boot-base:     #232729 (Winter combat boot)
+    outline:       #161A1D (Dark 1.7px figure outline so snow suit pops on white terrain)
+    shadow:        #0E1418 (Cool slate-black down-right contact shadow, opacity 0.32)
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <title>US Infantry Squad (Winter Snow Camo, Top-Down)</title>
+  <desc>Original overhead tactical wargame sprite of a 9-soldier US infantry squad in winter overwhite snow camouflage with contrasting dark webbing, packs, and weapons for high legibility on snow terrain.</desc>
+
+  <style>
+    :root {
+      --uniform-base: #E6E9EA;
+      --uniform-shade: #BFC6C9;
+      --uniform-hi: #F6F8F9;
+      --camo-patch: #9AA3A6;
+      --pack-base: #454F46;
+      --pack-shade: #2E3630;
+      --pack-hi: #5C675D;
+      --helmet-base: #ECEFF0;
+      --helmet-shade: #B8C0C4;
+      --helmet-hi: #FFFFFF;
+      --skin-base: #C79B72;
+      --skin-shade: #A47953;
+      --rifle-base: #1F2224;
+      --rifle-hi: #3E4448;
+      --mg-box: #3C463E;
+      --radio-body: #333B36;
+      --radio-hi: #546058;
+      --boot-base: #232729;
+      --outline: #161A1D;
+      --shadow: #0E1418;
+    }
+    .outline {
+      stroke: var(--outline);
+      stroke-width: 1.7;
+      stroke-linejoin: round;
+      stroke-linecap: round;
+    }
+    .outline-thin {
+      stroke: var(--outline);
+      stroke-width: 1.25;
+      stroke-linejoin: round;
+      stroke-linecap: round;
+    }
+  </style>
+
+  <defs>
+    <!-- Soft contact shadow offset down-right -->
+    <g id="shadow">
+      <ellipse cx="2.4" cy="5.0" rx="11.4" ry="9.0" fill="var(--shadow)" fill-opacity="0.32"/>
+      <ellipse cx="1.6" cy="-7.5" rx="3.2" ry="6.4" fill="var(--shadow)" fill-opacity="0.24"/>
+    </g>
+
+    <!-- 1. Standard Rifleman Pose A (Winter overwhite + dark webbing) -->
+    <g id="soldier-base">
+      <use href="#shadow"/>
+      <!-- Boots -->
+      <rect x="-6.8" y="9.2" width="3.8" height="4.2" rx="1.6" fill="var(--boot-base)" class="outline-thin"/>
+      <rect x="3.2" y="8.2" width="3.8" height="4.0" rx="1.6" fill="var(--boot-base)" class="outline-thin"/>
+      <!-- Contrasting dark webbing Backpack -->
+      <rect x="-9.5" y="5.2" width="3.0" height="5.2" rx="1.2" fill="var(--pack-shade)" class="outline-thin"/>
+      <rect x="6.5" y="5.2" width="3.0" height="5.2" rx="1.2" fill="var(--pack-shade)" class="outline-thin"/>
+      <rect x="-7.8" y="4.2" width="15.6" height="7.8" rx="2.4" fill="var(--pack-base)" class="outline"/>
+      <path d="M-6.8,9.0 L6.8,9.0 C6.8,10.6 5.6,11.4 4.2,11.4 L-4.2,11.4 C-5.6,11.4 -6.8,10.6 -6.8,9.0 Z" fill="var(--pack-shade)"/>
+      <rect x="-6.0" y="4.8" width="12.0" height="3.0" rx="1.2" fill="var(--pack-hi)"/>
+      <!-- Left & Right Arms in winter overgarment -->
+      <path d="M-10.8,1.5 C-11.2,-2.2 -8.2,-6.2 -2.6,-8.8 L-0.4,-6.4 C-4.4,-4.2 -6.2,-1.2 -6.2,2.0 Z" fill="var(--uniform-base)" class="outline"/>
+      <path d="M-9.8,0.6 C-9.8,-2.2 -7.5,-5.2 -3.0,-7.6 L-2.0,-6.6 C-5.8,-4.4 -7.6,-1.8 -7.8,1.0 Z" fill="var(--uniform-hi)"/>
+      <path d="M10.8,1.8 C11.2,-1.5 8.8,-4.6 3.0,-5.6 L1.5,-2.8 C5.2,-2.0 6.2,0.0 6.0,2.5 Z" fill="var(--uniform-base)" class="outline"/>
+      <!-- Shoulders / Torso (~22px wide) -->
+      <path d="M-11.2,1.6 C-11.2,-2.0 -7.2,-3.6 0.0,-3.6 C7.2,-3.6 11.2,-2.0 11.2,1.6 C11.2,5.2 7.6,6.6 0.0,6.6 C-7.6,6.6 -11.2,5.2 -11.2,1.6 Z" fill="var(--uniform-base)" class="outline"/>
+      <path d="M-9.8,2.6 C-8.4,5.0 -4.8,5.8 0.0,5.8 C4.8,5.8 8.4,5.0 9.8,2.6 C7.6,4.0 4.2,4.4 0.0,4.4 C-4.2,4.4 -7.6,4.0 -9.8,2.6 Z" fill="var(--uniform-shade)"/>
+      <!-- Snow camo disruptive patches & crisp white highlights -->
+      <ellipse cx="-7.2" cy="2.0" rx="2.2" ry="1.3" fill="var(--camo-patch)"/>
+      <ellipse cx="7.0" cy="-0.8" rx="2.0" ry="1.2" fill="var(--camo-patch)"/>
+      <ellipse cx="-6.4" cy="-0.4" rx="2.8" ry="1.6" fill="var(--uniform-hi)"/>
+      <ellipse cx="6.4" cy="0.4" rx="2.8" ry="1.6" fill="var(--uniform-hi)"/>
+      <!-- Dark contrasting webbing straps over white snow suit -->
+      <rect x="-5.4" y="-3.2" width="2.4" height="9.0" rx="0.6" fill="var(--pack-base)" class="outline-thin"/>
+      <rect x="3.0" y="-3.2" width="2.4" height="9.0" rx="0.6" fill="var(--pack-base)" class="outline-thin"/>
+      <!-- Hands -->
+      <ellipse cx="-1.2" cy="-8.2" rx="1.9" ry="1.5" fill="var(--skin-base)" class="outline-thin"/>
+      <ellipse cx="1.8" cy="-4.2" rx="1.8" ry="1.4" fill="var(--skin-base)" class="outline-thin"/>
+      <!-- Rifle -->
+      <g transform="rotate(-4 0 -7)">
+        <path d="M-1.0,-7.5 L-4.0,-6.6 C-4.4,-6.3 -4.4,-5.2 -3.8,-4.8 L-1.0,-5.4 Z" fill="var(--rifle-base)" class="outline-thin"/>
+        <rect x="-0.8" y="-4.5" width="2.2" height="4.0" rx="0.8" fill="var(--rifle-base)" class="outline-thin"/>
+        <rect x="-1.2" y="-9.0" width="2.8" height="4.8" rx="0.7" fill="var(--rifle-base)" class="outline"/>
+        <rect x="-0.3" y="-8.4" width="1.0" height="3.6" fill="var(--rifle-hi)"/>
+        <rect x="-0.9" y="-12.6" width="2.2" height="3.8" rx="0.6" fill="var(--rifle-base)" class="outline"/>
+        <rect x="-0.5" y="-16.5" width="1.4" height="4.2" rx="0.5" fill="var(--rifle-base)" class="outline-thin"/>
+      </g>
+      <!-- White Helmet Cover with dark goggle/retention band -->
+      <path d="M-6.2,1.0 C-6.2,-2.4 -3.6,-4.6 0.0,-4.6 C3.6,-4.6 6.2,-2.4 6.2,1.0 C6.2,4.2 3.8,6.2 0.0,6.2 C-3.8,6.2 -6.2,4.2 -6.2,1.0 Z" fill="var(--helmet-base)" class="outline"/>
+      <path d="M-5.2,1.8 C-4.6,4.2 -2.5,5.4 0.0,5.4 C2.5,5.4 4.6,4.2 5.2,1.8 C3.8,3.4 2.0,4.0 0.0,4.0 C-2.0,4.0 -3.8,3.4 -5.2,1.8 Z" fill="var(--helmet-shade)"/>
+      <path d="M-5.8,0.4 C-3.8,-0.5 -1.9,-0.8 0.0,-0.8 C1.9,-0.8 3.8,-0.5 5.8,0.4 C5.9,1.0 5.8,1.6 5.6,2.0 C3.8,1.1 1.9,0.7 0.0,0.7 C-1.9,0.7 -3.8,1.1 -5.6,2.0 C-5.8,1.6 -5.9,1.0 -5.8,0.4 Z" fill="var(--pack-shade)"/>
+      <ellipse cx="-0.3" cy="-1.6" rx="3.2" ry="2.0" fill="var(--helmet-hi)"/>
+    </g>
+
+    <!-- 2. Rifleman Pose B: High-Ready / Scanning (Winter variant) -->
+    <g id="soldier-ready">
+      <use href="#shadow"/>
+      <rect x="-6.4" y="8.6" width="3.8" height="4.0" rx="1.6" fill="var(--boot-base)" class="outline-thin"/>
+      <rect x="3.0" y="9.4" width="3.8" height="4.2" rx="1.6" fill="var(--boot-base)" class="outline-thin"/>
+      <!-- Backpack -->
+      <rect x="-9.2" y="5.0" width="2.8" height="5.0" rx="1.2" fill="var(--pack-shade)" class="outline-thin"/>
+      <rect x="6.4" y="5.0" width="2.8" height="5.0" rx="1.2" fill="var(--pack-shade)" class="outline-thin"/>
+      <rect x="-7.5" y="4.2" width="15.0" height="7.6" rx="2.4" fill="var(--pack-base)" class="outline"/>
+      <rect x="-5.6" y="4.8" width="11.2" height="2.8" rx="1.2" fill="var(--pack-hi)"/>
+      <!-- Arms -->
+      <path d="M-10.6,1.2 C-11.4,-2.6 -8.8,-5.8 -3.6,-7.8 L-1.4,-5.4 C-5.0,-3.6 -6.4,-1.0 -6.2,1.8 Z" fill="var(--uniform-base)" class="outline"/>
+      <path d="M10.8,2.2 C11.6,-1.0 9.6,-4.2 4.4,-5.4 L2.6,-2.6 C6.0,-1.6 6.8,0.4 6.4,2.8 Z" fill="var(--uniform-base)" class="outline"/>
+      <!-- Torso -->
+      <path d="M-11.0,1.6 C-11.0,-2.0 -7.0,-3.6 0.0,-3.6 C7.0,-3.6 11.0,-2.0 11.0,1.6 C11.0,5.2 7.4,6.6 0.0,6.6 C-7.4,6.6 -11.0,5.2 -11.0,1.6 Z" fill="var(--uniform-base)" class="outline"/>
+      <path d="M-9.6,2.6 C-8.2,5.0 -4.6,5.8 0.0,5.8 C4.6,5.8 8.2,5.0 9.6,2.6 C7.4,4.0 4.0,4.4 0.0,4.4 C-4.0,4.4 -7.4,4.0 -9.6,2.6 Z" fill="var(--uniform-shade)"/>
+      <ellipse cx="-6.8" cy="1.8" rx="2.1" ry="1.2" fill="var(--camo-patch)"/>
+      <ellipse cx="6.4" cy="0.0" rx="2.8" ry="1.7" fill="var(--uniform-hi)"/>
+      <rect x="-5.2" y="-3.2" width="2.4" height="8.8" rx="0.6" fill="var(--pack-base)" class="outline-thin"/>
+      <rect x="2.8" y="-3.2" width="2.4" height="8.8" rx="0.6" fill="var(--pack-base)" class="outline-thin"/>
+      <!-- Hands -->
+      <ellipse cx="-2.4" cy="-7.0" rx="1.9" ry="1.5" fill="var(--skin-base)" class="outline-thin"/>
+      <ellipse cx="2.8" cy="-3.8" rx="1.8" ry="1.4" fill="var(--skin-base)" class="outline-thin"/>
+      <!-- Rifle angled at -14 deg -->
+      <g transform="rotate(-14 1 -6)">
+        <path d="M-0.6,-7.2 L-3.6,-6.2 C-4.0,-5.9 -4.0,-4.8 -3.4,-4.4 L-0.6,-5.0 Z" fill="var(--rifle-base)" class="outline-thin"/>
+        <rect x="-0.4" y="-4.2" width="2.2" height="3.8" rx="0.8" fill="var(--rifle-base)" class="outline-thin"/>
+        <rect x="-0.8" y="-8.8" width="2.8" height="4.8" rx="0.7" fill="var(--rifle-base)" class="outline"/>
+        <rect x="0.1" y="-8.2" width="1.0" height="3.6" fill="var(--rifle-hi)"/>
+        <rect x="-0.5" y="-12.4" width="2.2" height="3.8" rx="0.6" fill="var(--rifle-base)" class="outline"/>
+        <rect x="-0.1" y="-16.2" width="1.4" height="4.0" rx="0.5" fill="var(--rifle-base)" class="outline-thin"/>
+      </g>
+      <!-- Helmet turned slightly left -->
+      <g transform="rotate(-5 0 1)">
+        <path d="M-6.2,1.0 C-6.2,-2.4 -3.6,-4.6 0.0,-4.6 C3.6,-4.6 6.2,-2.4 6.2,1.0 C6.2,4.2 3.8,6.2 0.0,6.2 C-3.8,6.2 -6.2,4.2 -6.2,1.0 Z" fill="var(--helmet-base)" class="outline"/>
+        <path d="M-5.2,1.8 C-4.6,4.2 -2.5,5.4 0.0,5.4 C2.5,5.4 4.6,4.2 5.2,1.8 C3.8,3.4 2.0,4.0 0.0,4.0 C-2.0,4.0 -3.8,3.4 -5.2,1.8 Z" fill="var(--helmet-shade)"/>
+        <path d="M-5.8,0.4 C-3.8,-0.5 -1.9,-0.8 0.0,-0.8 C1.9,-0.8 3.8,-0.5 5.8,0.4 C5.9,1.0 5.8,1.6 5.6,2.0 C3.8,1.1 1.9,0.7 0.0,0.7 C-1.9,0.7 -3.8,1.1 -5.6,2.0 C-5.8,1.6 -5.9,1.0 -5.8,0.4 Z" fill="var(--pack-shade)"/>
+        <ellipse cx="-0.4" cy="-1.6" rx="3.2" ry="2.0" fill="var(--helmet-hi)"/>
+      </g>
+    </g>
+
+    <!-- 3. Rifleman Pose C: Braced / Advancing (Winter variant) -->
+    <g id="soldier-braced">
+      <use href="#shadow"/>
+      <rect x="-6.6" y="8.0" width="3.8" height="4.0" rx="1.6" fill="var(--boot-base)" class="outline-thin"/>
+      <rect x="3.2" y="9.6" width="3.8" height="4.2" rx="1.6" fill="var(--boot-base)" class="outline-thin"/>
+      <!-- Backpack -->
+      <rect x="-8.0" y="4.4" width="16.0" height="7.6" rx="2.4" fill="var(--pack-base)" class="outline"/>
+      <path d="M-7.0,9.0 L7.0,9.0 C7.0,10.6 5.8,11.4 4.4,11.4 L-4.4,11.4 C-5.8,11.4 -7.0,10.6 -7.0,9.0 Z" fill="var(--pack-shade)"/>
+      <rect x="-6.0" y="5.0" width="12.0" height="2.8" rx="1.2" fill="var(--pack-hi)"/>
+      <!-- Arms -->
+      <path d="M-10.6,0.8 C-11.0,-3.0 -7.6,-6.8 -1.8,-9.2 L0.4,-6.8 C-3.8,-4.6 -5.8,-1.8 -5.8,1.4 Z" fill="var(--uniform-base)" class="outline"/>
+      <path d="M10.6,2.2 C11.0,-1.2 8.4,-4.4 2.8,-5.4 L1.4,-2.6 C5.0,-1.8 6.0,0.2 5.8,2.8 Z" fill="var(--uniform-base)" class="outline"/>
+      <!-- Torso slightly canted -->
+      <g transform="rotate(4 0 1)">
+        <path d="M-11.2,1.6 C-11.2,-2.0 -7.2,-3.6 0.0,-3.6 C7.2,-3.6 11.2,-2.0 11.2,1.6 C11.2,5.2 7.6,6.6 0.0,6.6 C-7.6,6.6 -11.2,5.2 -11.2,1.6 Z" fill="var(--uniform-base)" class="outline"/>
+        <path d="M-9.8,2.6 C-8.4,5.0 -4.8,5.8 0.0,5.8 C4.8,5.8 8.4,5.0 9.8,2.6 C7.6,4.0 4.2,4.4 0.0,4.4 C-4.2,4.4 -7.6,4.0 -9.8,2.6 Z" fill="var(--uniform-shade)"/>
+        <ellipse cx="-6.6" cy="0.0" rx="2.8" ry="1.7" fill="var(--uniform-hi)"/>
+        <ellipse cx="6.8" cy="1.6" rx="2.1" ry="1.2" fill="var(--camo-patch)"/>
+        <rect x="-5.4" y="-3.2" width="2.4" height="9.0" rx="0.6" fill="var(--pack-base)" class="outline-thin"/>
+        <rect x="3.0" y="-3.2" width="2.4" height="9.0" rx="0.6" fill="var(--pack-base)" class="outline-thin"/>
+      </g>
+      <!-- Hands -->
+      <ellipse cx="-0.4" cy="-8.5" rx="1.9" ry="1.5" fill="var(--skin-base)" class="outline-thin"/>
+      <ellipse cx="2.0" cy="-4.0" rx="1.8" ry="1.4" fill="var(--skin-base)" class="outline-thin"/>
+      <!-- Rifle -->
+      <g transform="rotate(2 0.5 -7)">
+        <path d="M-0.4,-7.5 L-3.4,-6.6 C-3.8,-6.3 -3.8,-5.2 -3.2,-4.8 L-0.4,-5.4 Z" fill="var(--rifle-base)" class="outline-thin"/>
+        <rect x="-0.2" y="-4.5" width="2.2" height="4.0" rx="0.8" fill="var(--rifle-base)" class="outline-thin"/>
+        <rect x="-0.6" y="-9.0" width="2.8" height="4.8" rx="0.7" fill="var(--rifle-base)" class="outline"/>
+        <rect x="0.3" y="-8.4" width="1.0" height="3.6" fill="var(--rifle-hi)"/>
+        <rect x="-0.3" y="-12.6" width="2.2" height="3.8" rx="0.6" fill="var(--rifle-base)" class="outline"/>
+        <rect x="0.1" y="-16.5" width="1.4" height="4.2" rx="0.5" fill="var(--rifle-base)" class="outline-thin"/>
+      </g>
+      <!-- Helmet -->
+      <path d="M-6.2,1.0 C-6.2,-2.4 -3.6,-4.6 0.0,-4.6 C3.6,-4.6 6.2,-2.4 6.2,1.0 C6.2,4.2 3.8,6.2 0.0,6.2 C-3.8,6.2 -6.2,4.2 -6.2,1.0 Z" fill="var(--helmet-base)" class="outline"/>
+      <path d="M-5.2,1.8 C-4.6,4.2 -2.5,5.4 0.0,5.4 C2.5,5.4 4.6,4.2 5.2,1.8 C3.8,3.4 2.0,4.0 0.0,4.0 C-2.0,4.0 -3.8,3.4 -5.2,1.8 Z" fill="var(--helmet-shade)"/>
+      <path d="M-5.8,0.4 C-3.8,-0.5 -1.9,-0.8 0.0,-0.8 C1.9,-0.8 3.8,-0.5 5.8,0.4 C5.9,1.0 5.8,1.6 5.6,2.0 C3.8,1.1 1.9,0.7 0.0,0.7 C-1.9,0.7 -3.8,1.1 -5.6,2.0 C-5.8,1.6 -5.9,1.0 -5.8,0.4 Z" fill="var(--pack-shade)"/>
+      <ellipse cx="0.2" cy="-1.6" rx="3.2" ry="2.0" fill="var(--helmet-hi)"/>
+    </g>
+
+    <!-- 4. Machine-Gunner / SAW Gunner (Bulkier winter suit + heavy dark webbing & SAW) -->
+    <g id="soldier-mg">
+      <ellipse cx="2.6" cy="5.2" rx="12.8" ry="9.6" fill="var(--shadow)" fill-opacity="0.34"/>
+      <ellipse cx="1.8" cy="-8.5" rx="4.2" ry="7.2" fill="var(--shadow)" fill-opacity="0.26"/>
+      <!-- Boots -->
+      <rect x="-7.6" y="9.8" width="4.2" height="4.4" rx="1.6" fill="var(--boot-base)" class="outline-thin"/>
+      <rect x="3.6" y="8.8" width="4.2" height="4.2" rx="1.6" fill="var(--boot-base)" class="outline-thin"/>
+      <!-- Heavy Ammo Rucksack -->
+      <rect x="-11.0" y="4.8" width="3.6" height="6.4" rx="1.4" fill="var(--pack-shade)" class="outline"/>
+      <rect x="7.4" y="4.8" width="3.6" height="6.4" rx="1.4" fill="var(--pack-shade)" class="outline"/>
+      <rect x="-9.0" y="4.0" width="18.0" height="8.8" rx="2.8" fill="var(--pack-base)" class="outline"/>
+      <path d="M-8.0,9.4 L8.0,9.4 C8.0,11.2 6.6,12.2 5.0,12.2 L-5.0,12.2 C-6.6,12.2 -8.0,11.2 -8.0,9.4 Z" fill="var(--pack-shade)"/>
+      <rect x="-7.0" y="4.8" width="14.0" height="3.4" rx="1.4" fill="var(--pack-hi)"/>
+      <!-- Heavy Arms gripping SAW -->
+      <path d="M-12.2,1.8 C-12.6,-2.4 -9.2,-6.8 -2.8,-9.6 L-0.2,-6.8 C-4.8,-4.4 -6.8,-1.2 -6.8,2.2 Z" fill="var(--uniform-base)" class="outline"/>
+      <path d="M12.2,2.0 C12.6,-1.6 9.8,-5.0 3.4,-6.0 L1.8,-2.8 C6.0,-2.0 7.2,0.2 7.0,2.8 Z" fill="var(--uniform-base)" class="outline"/>
+      <!-- Bulkier Armored Torso (~24.5px wide) -->
+      <path d="M-12.4,1.8 C-12.4,-2.2 -8.0,-4.0 0.0,-4.0 C8.0,-4.0 12.4,-2.2 12.4,1.8 C12.4,5.8 8.4,7.2 0.0,7.2 C-8.4,7.2 -12.4,5.8 -12.4,1.8 Z" fill="var(--uniform-base)" class="outline"/>
+      <path d="M-10.8,2.8 C-9.2,5.4 -5.2,6.4 0.0,6.4 C5.2,6.4 9.2,5.4 10.8,2.8 C8.4,4.4 4.6,4.8 0.0,4.8 C-4.6,4.8 -8.4,4.4 -10.8,2.8 Z" fill="var(--uniform-shade)"/>
+      <ellipse cx="-8.0" cy="2.0" rx="2.4" ry="1.4" fill="var(--camo-patch)"/>
+      <ellipse cx="7.8" cy="-0.6" rx="2.4" ry="1.4" fill="var(--camo-patch)"/>
+      <ellipse cx="-7.2" cy="-0.4" rx="3.2" ry="1.8" fill="var(--uniform-hi)"/>
+      <ellipse cx="7.2" cy="0.6" rx="3.2" ry="1.8" fill="var(--uniform-hi)"/>
+      <!-- Heavy MG webbing & chest pouches -->
+      <rect x="-6.6" y="-3.4" width="3.2" height="9.6" rx="0.8" fill="var(--pack-base)" class="outline-thin"/>
+      <rect x="3.4" y="-3.4" width="3.2" height="9.6" rx="0.8" fill="var(--pack-base)" class="outline-thin"/>
+      <!-- Hands -->
+      <ellipse cx="-1.2" cy="-8.8" rx="2.0" ry="1.6" fill="var(--skin-base)" class="outline-thin"/>
+      <ellipse cx="2.2" cy="-4.2" rx="1.9" ry="1.5" fill="var(--skin-base)" class="outline-thin"/>
+      <!-- M249 SAW / Light Machine Gun -->
+      <g transform="rotate(-2 0.5 -8)">
+        <path d="M0.4,-14.8 L-3.2,-12.2 M1.2,-14.8 L4.8,-12.2" stroke="var(--rifle-base)" stroke-width="1.5" stroke-linecap="round"/>
+        <rect x="-4.8" y="-9.2" width="4.2" height="4.6" rx="1.0" fill="var(--mg-box)" class="outline"/>
+        <rect x="-1.6" y="-8.2" width="1.6" height="2.2" fill="#C8A23B" class="outline-thin"/>
+        <rect x="-0.6" y="-4.5" width="2.8" height="4.4" rx="0.8" fill="var(--rifle-base)" class="outline-thin"/>
+        <rect x="-1.2" y="-10.2" width="3.8" height="6.2" rx="0.9" fill="var(--rifle-base)" class="outline"/>
+        <rect x="-0.1" y="-9.5" width="1.6" height="4.8" fill="var(--rifle-hi)"/>
+        <rect x="-0.8" y="-14.6" width="3.0" height="4.8" rx="0.7" fill="var(--rifle-base)" class="outline"/>
+        <rect x="-0.2" y="-18.6" width="1.8" height="4.4" rx="0.6" fill="var(--rifle-base)" class="outline-thin"/>
+      </g>
+      <!-- Helmet -->
+      <path d="M-6.6,1.0 C-6.6,-2.6 -3.8,-4.8 0.0,-4.8 C3.8,-4.8 6.6,-2.6 6.6,1.0 C6.6,4.4 4.0,6.5 0.0,6.5 C-4.0,6.5 -6.6,4.4 -6.6,1.0 Z" fill="var(--helmet-base)" class="outline"/>
+      <path d="M-5.6,1.8 C-4.8,4.4 -2.6,5.6 0.0,5.6 C2.6,5.6 4.8,4.4 5.6,1.8 C4.0,3.5 2.1,4.2 0.0,4.2 C-2.1,4.2 -4.0,3.5 -5.6,1.8 Z" fill="var(--helmet-shade)"/>
+      <path d="M-6.2,0.4 C-4.0,-0.5 -2.0,-0.8 0.0,-0.8 C2.0,-0.8 4.0,-0.5 6.2,0.4 C6.3,1.0 6.2,1.6 6.0,2.0 C4.0,1.1 2.0,0.7 0.0,0.7 C-2.0,0.7 -4.0,1.1 -6.0,2.0 C-6.2,1.6 -6.3,1.0 -6.2,0.4 Z" fill="var(--pack-shade)"/>
+      <ellipse cx="-0.2" cy="-1.7" rx="3.4" ry="2.2" fill="var(--helmet-hi)"/>
+    </g>
+
+    <!-- 5. Radio Operator / RTO (Winter suit + dark AN/PRC radio pack & whip antenna) -->
+    <g id="soldier-radio">
+      <ellipse cx="2.5" cy="5.6" rx="11.8" ry="9.8" fill="var(--shadow)" fill-opacity="0.34"/>
+      <ellipse cx="1.5" cy="-7.5" rx="3.0" ry="6.2" fill="var(--shadow)" fill-opacity="0.24"/>
+      <!-- Boots -->
+      <rect x="-6.8" y="10.2" width="3.8" height="4.2" rx="1.6" fill="var(--boot-base)" class="outline-thin"/>
+      <rect x="3.2" y="9.2" width="3.8" height="4.0" rx="1.6" fill="var(--boot-base)" class="outline-thin"/>
+      <!-- Bulky Field Radio Pack Silhouette behind torso -->
+      <g id="radio-pack">
+        <rect x="-10.2" y="4.8" width="3.2" height="6.6" rx="1.2" fill="var(--pack-shade)" class="outline"/>
+        <rect x="-8.0" y="3.8" width="16.4" height="9.8" rx="2.0" fill="var(--radio-body)" class="outline"/>
+        <rect x="-6.6" y="4.4" width="13.6" height="4.6" rx="1.2" fill="var(--radio-hi)" class="outline-thin"/>
+        <circle cx="-3.8" cy="5.8" r="1.3" fill="var(--rifle-base)" class="outline-thin"/>
+        <circle cx="0.0" cy="5.8" r="1.1" fill="var(--rifle-base)" class="outline-thin"/>
+        <circle cx="5.2" cy="5.8" r="1.8" fill="var(--rifle-base)" class="outline-thin"/>
+        <path d="M5.4,5.8 L12.5,16.5" stroke="var(--rifle-base)" stroke-width="2.0" stroke-linecap="round"/>
+        <path d="M5.4,5.8 L12.5,16.5" stroke="var(--rifle-hi)" stroke-width="0.8" stroke-linecap="round"/>
+        <circle cx="12.5" cy="16.5" r="1.3" fill="var(--rifle-base)"/>
+      </g>
+      <!-- Left & Right Arms -->
+      <path d="M-10.8,1.5 C-11.2,-2.2 -8.2,-6.2 -2.6,-8.8 L-0.4,-6.4 C-4.4,-4.2 -6.2,-1.2 -6.2,2.0 Z" fill="var(--uniform-base)" class="outline"/>
+      <path d="M10.8,1.8 C11.2,-1.5 8.8,-4.6 3.0,-5.6 L1.5,-2.8 C5.2,-2.0 6.2,0.0 6.0,2.5 Z" fill="var(--uniform-base)" class="outline"/>
+      <!-- Shoulders / Torso -->
+      <path d="M-11.2,1.6 C-11.2,-2.0 -7.2,-3.6 0.0,-3.6 C7.2,-3.6 11.2,-2.0 11.2,1.6 C11.2,5.2 7.6,6.6 0.0,6.6 C-7.6,6.6 -11.2,5.2 -11.2,1.6 Z" fill="var(--uniform-base)" class="outline"/>
+      <path d="M-9.8,2.6 C-8.4,5.0 -4.8,5.8 0.0,5.8 C4.8,5.8 8.4,5.0 9.8,2.6 C7.6,4.0 4.2,4.4 0.0,4.4 C-4.2,4.4 -7.6,4.0 -9.8,2.6 Z" fill="var(--uniform-shade)"/>
+      <ellipse cx="-6.6" cy="0.0" rx="2.8" ry="1.7" fill="var(--uniform-hi)"/>
+      <ellipse cx="6.6" cy="0.0" rx="2.8" ry="1.7" fill="var(--uniform-hi)"/>
+      <rect x="-5.4" y="-3.2" width="2.4" height="9.0" rx="0.6" fill="var(--pack-base)" class="outline-thin"/>
+      <rect x="3.0" y="-3.2" width="2.4" height="9.0" rx="0.6" fill="var(--pack-base)" class="outline-thin"/>
+      <!-- Radio handset clipped to left shoulder strap -->
+      <rect x="-6.4" y="-1.8" width="2.6" height="4.2" rx="0.9" fill="var(--rifle-base)" class="outline-thin"/>
+      <!-- Hands -->
+      <ellipse cx="-1.2" cy="-8.2" rx="1.9" ry="1.5" fill="var(--skin-base)" class="outline-thin"/>
+      <ellipse cx="1.8" cy="-4.2" rx="1.8" ry="1.4" fill="var(--skin-base)" class="outline-thin"/>
+      <!-- Rifle -->
+      <g transform="rotate(-5 0 -7)">
+        <path d="M-1.0,-7.5 L-4.0,-6.6 C-4.4,-6.3 -4.4,-5.2 -3.8,-4.8 L-1.0,-5.4 Z" fill="var(--rifle-base)" class="outline-thin"/>
+        <rect x="-0.8" y="-4.5" width="2.2" height="4.0" rx="0.8" fill="var(--rifle-base)" class="outline-thin"/>
+        <rect x="-1.2" y="-9.0" width="2.8" height="4.8" rx="0.7" fill="var(--rifle-base)" class="outline"/>
+        <rect x="-0.3" y="-8.4" width="1.0" height="3.6" fill="var(--rifle-hi)"/>
+        <rect x="-0.9" y="-12.6" width="2.2" height="3.8" rx="0.6" fill="var(--rifle-base)" class="outline"/>
+        <rect x="-0.5" y="-16.5" width="1.4" height="4.2" rx="0.5" fill="var(--rifle-base)" class="outline-thin"/>
+      </g>
+      <!-- Helmet -->
+      <path d="M-6.2,1.0 C-6.2,-2.4 -3.6,-4.6 0.0,-4.6 C3.6,-4.6 6.2,-2.4 6.2,1.0 C6.2,4.2 3.8,6.2 0.0,6.2 C-3.8,6.2 -6.2,4.2 -6.2,1.0 Z" fill="var(--helmet-base)" class="outline"/>
+      <path d="M-5.2,1.8 C-4.6,4.2 -2.5,5.4 0.0,5.4 C2.5,5.4 4.6,4.2 5.2,1.8 C3.8,3.4 2.0,4.0 0.0,4.0 C-2.0,4.0 -3.8,3.4 -5.2,1.8 Z" fill="var(--helmet-shade)"/>
+      <path d="M-5.8,0.4 C-3.8,-0.5 -1.9,-0.8 0.0,-0.8 C1.9,-0.8 3.8,-0.5 5.8,0.4 C5.9,1.0 5.8,1.6 5.6,2.0 C3.8,1.1 1.9,0.7 0.0,0.7 C-1.9,0.7 -3.8,1.1 -5.6,2.0 C-5.8,1.6 -5.9,1.0 -5.8,0.4 Z" fill="var(--pack-shade)"/>
+      <ellipse cx="-0.3" cy="-1.6" rx="3.2" ry="2.0" fill="var(--helmet-hi)"/>
+    </g>
+  </defs>
+
+  <!-- 9-Soldier Squad in loose tactical wedge/dispersal facing North -->
+  <g id="squad">
+    <!-- 1. Point Man / Lead Scout (Rifleman) -->
+    <use href="#soldier-base" transform="translate(118, 46) rotate(-6)"/>
+
+    <!-- 2. Left Flank Security (Rifleman, braced pose) -->
+    <use href="#soldier-braced" transform="translate(52, 74) rotate(-14) scale(0.98)"/>
+
+    <!-- 3. Right Front Automatic Rifleman / SAW Gunner (Bulkier MG) -->
+    <use href="#soldier-mg" transform="translate(186, 68) rotate(9) scale(1.04)"/>
+
+    <!-- 4. Alpha Fire Team Leader (Rifleman, high-ready pose) -->
+    <use href="#soldier-ready" transform="translate(86, 118) rotate(-5)"/>
+
+    <!-- 5. Squad Leader (Center Rifleman) -->
+    <use href="#soldier-base" transform="translate(148, 114) rotate(4) scale(1.02)"/>
+
+    <!-- 6. Right Flank Rifleman (Braced pose) -->
+    <use href="#soldier-braced" transform="translate(212, 126) rotate(13) scale(0.97)"/>
+
+    <!-- 7. Radio Operator / RTO (Behind Squad Leader, visible radio pack & whip antenna) -->
+    <use href="#soldier-radio" transform="translate(122, 168) rotate(-3)"/>
+
+    <!-- 8. Left Rear Security (Rifleman) -->
+    <use href="#soldier-base" transform="translate(56, 184) rotate(-11) scale(0.99)"/>
+
+    <!-- 9. Bravo Team Leader / Rear Security (Rifleman, high-ready pose) -->
+    <use href="#soldier-ready" transform="translate(184, 194) rotate(10)"/>
+  </g>
+</svg>
