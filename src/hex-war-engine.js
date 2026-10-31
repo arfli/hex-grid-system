@@ -142,7 +142,60 @@
       if (!ctx) return;
       ctx.clearRect(0, 0, w, h);
       this.game.grid.cells.forEach(cell => this.bakeCell(cell, ctx));
+      this.bakeTopographicOverlay(ctx, w, h);
       this.terrainCacheDirty = false;
+    }
+
+    bakeTopographicOverlay(ctx, w, h) {
+      ctx.save();
+      ctx.strokeStyle = 'rgba(75, 65, 45, 0.45)';
+      ctx.lineWidth = 1.2;
+      ctx.setLineDash([8, 6]);
+
+      // Subtle topographic elevation contours
+      const contourCenters = [
+        { x: w * 0.25, y: h * 0.35, r1: 140, r2: 260, label: '+20m' },
+        { x: w * 0.72, y: h * 0.40, r1: 160, r2: 300, label: '+10m' },
+        { x: w * 0.45, y: h * 0.75, r1: 180, r2: 320, label: '+15m' }
+      ];
+
+      ctx.fillStyle = 'rgba(120, 105, 80, 0.55)';
+      ctx.font = 'bold 9px ui-monospace';
+
+      for (const c of contourCenters) {
+        ctx.beginPath();
+        ctx.ellipse(c.x, c.y, c.r1, c.r1 * 0.65, -0.2, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.fillText(c.label, c.x + c.r1 * 0.8, c.y);
+
+        ctx.beginPath();
+        ctx.ellipse(c.x, c.y, c.r2, c.r2 * 0.65, -0.2, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+
+      // Military tactical grid tick marks along map edges
+      ctx.setLineDash([]);
+      ctx.strokeStyle = 'rgba(140, 130, 95, 0.35)';
+      ctx.lineWidth = 1.0;
+      ctx.fillStyle = 'rgba(160, 150, 115, 0.5)';
+      ctx.font = '9px ui-monospace';
+
+      for (let x = 100; x < w; x += 300) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0); ctx.lineTo(x, 8);
+        ctx.moveTo(x, h - 8); ctx.lineTo(x, h);
+        ctx.stroke();
+        ctx.fillText(`GR ${Math.round(x / 10)}`, x + 3, 14);
+      }
+      for (let y = 100; y < h; y += 250) {
+        ctx.beginPath();
+        ctx.moveTo(0, y); ctx.lineTo(8, y);
+        ctx.moveTo(w - 8, y); ctx.lineTo(w, y);
+        ctx.stroke();
+        ctx.fillText(`LN ${Math.round(y / 10)}`, 10, y - 2);
+      }
+
+      ctx.restore();
     }
 
     bakeCell(cell, ctx) {
@@ -374,6 +427,8 @@
 
       this.game.objectives.forEach((objective, index) => this.drawObjective(objective, index));
       this.drawGroundParticles();
+      this.drawTacticalDatalinks();
+      this.drawEngagementEnvelopes();
       this.game.livingUnits.forEach(unit => this.drawUnit(unit));
       this.drawAirParticles();
       this.drawTracers();
@@ -417,6 +472,79 @@
       ctx.fillText(String(index + 1), center.x, center.y - 29);
     }
 
+    drawTacticalDatalinks() {
+      const ctx = this.context;
+      const living = this.game.livingUnits;
+      ctx.save();
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([4, 6]);
+
+      for (const unit of living) {
+        if (unit.isLeader) continue;
+        const leader = this.game.getLeaderFor(unit);
+        if (!leader || leader === unit || leader.health <= 0) continue;
+
+        const uPos = this.game.getUnitRenderPosition(unit);
+        const lPos = this.game.getUnitRenderPosition(leader);
+        const inCmd = this.game.isInCommand(unit);
+
+        if (inCmd) {
+          ctx.strokeStyle = unit.faction === 'US' ? 'rgba(85, 170, 255, 0.35)' : 'rgba(217, 75, 66, 0.35)';
+        } else {
+          ctx.strokeStyle = 'rgba(245, 158, 11, 0.2)';
+        }
+
+        ctx.beginPath();
+        ctx.moveTo(uPos.x, uPos.y);
+        ctx.lineTo(lPos.x, lPos.y);
+        ctx.stroke();
+      }
+
+      ctx.restore();
+    }
+
+    drawEngagementEnvelopes() {
+      const selected = this.game.selected;
+      if (!selected || selected.health <= 0) return;
+      const ctx = this.context;
+      const pos = this.game.getUnitRenderPosition(selected);
+      const hexMeters = this.game.scenario.map.metersPerHex || 100;
+      const hexSize = this.game.grid.size;
+      const pixelPerMeter = (hexSize * Math.sqrt(3)) / hexMeters;
+
+      const weapon = selected.weapon;
+      if (!weapon) return;
+
+      const maxR = weapon.maxRangeMeters * pixelPerMeter;
+      const optR = (weapon.optimalRangeMeters || weapon.maxRangeMeters * 0.6) * pixelPerMeter;
+      const facing = selected.facing !== undefined ? selected.facing : 0;
+      const halfArc = (Math.PI / 3) * 1.5;
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(pos.x, pos.y, maxR, facing - halfArc, facing + halfArc);
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.22)';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([6, 6]);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.arc(pos.x, pos.y, optR, facing - halfArc, facing + halfArc);
+      ctx.strokeStyle = 'rgba(96, 165, 250, 0.35)';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([3, 4]);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(pos.x, pos.y);
+      ctx.arc(pos.x, pos.y, optR, facing - halfArc, facing + halfArc);
+      ctx.closePath();
+      ctx.fillStyle = 'rgba(96, 165, 250, 0.04)';
+      ctx.fill();
+
+      ctx.restore();
+    }
+
     drawUnit(unit) {
       const ctx = this.context;
       const anim = unit.animState;
@@ -456,6 +584,57 @@
       ctx.fillRect(center.x - 28, center.y - 34, 56, 5);
       ctx.fillStyle = unit.health / unit.maxHealth > 0.4 ? '#72b65d' : '#d95f43';
       ctx.fillRect(center.x - 28, center.y - 34, 56 * unit.health / unit.maxHealth, 5);
+
+      // Subsystem and tactical status badges
+      let badgeY = center.y + 49;
+      if (unit.subsystems) {
+        const badges = [];
+        if (unit.subsystems.tracks === 'mobility_kill') badges.push({ text: 'MOB', color: '#ef4444' });
+        else if (unit.subsystems.engine === 'damaged') badges.push({ text: 'ENG', color: '#f59e0b' });
+        if (unit.subsystems.gun === 'damaged') badges.push({ text: 'GUN', color: '#ef4444' });
+        if (unit.subsystems.optics === 'damaged') badges.push({ text: 'OPT', color: '#f59e0b' });
+        if (!this.game.isInCommand(unit)) badges.push({ text: '!C2', color: '#f97316' });
+
+        if (badges.length) {
+          const totalW = badges.length * 28;
+          let bx = center.x - totalW / 2;
+          ctx.font = 'bold 9px ui-monospace';
+          for (const b of badges) {
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(bx, badgeY, 26, 12);
+            ctx.fillStyle = b.color;
+            ctx.fillText(b.text, bx + 13, badgeY + 9);
+            bx += 28;
+          }
+        }
+      } else if (unit.unitClass === 'infantry') {
+        const badges = [];
+        if (unit.suppression >= 0.7) badges.push({ text: 'PINNED', color: '#ef4444' });
+        else if (unit.suppression >= 0.35) badges.push({ text: 'SUPPR', color: '#f59e0b' });
+        if (!this.game.isInCommand(unit)) badges.push({ text: '!C2', color: '#f97316' });
+
+        if (unit.soldiers !== null && unit.soldiers !== undefined) {
+          ctx.fillStyle = '#0f172a';
+          ctx.fillRect(center.x - 28, badgeY, 56, 12);
+          ctx.fillStyle = '#e2e8f0';
+          ctx.font = 'bold 9px ui-monospace';
+          ctx.fillText(`${unit.soldiers}/${unit.maxSoldiers} SOL`, center.x, badgeY + 9);
+          badgeY += 14;
+        }
+
+        if (badges.length) {
+          const totalW = badges.length * 36;
+          let bx = center.x - totalW / 2;
+          ctx.font = 'bold 8px ui-monospace';
+          for (const b of badges) {
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(bx, badgeY, 34, 12);
+            ctx.fillStyle = b.color;
+            ctx.fillText(b.text, bx + 17, badgeY + 9);
+            bx += 36;
+          }
+        }
+      }
     }
 
     drawTargets() {
@@ -630,7 +809,51 @@
       }
       const meters = this.game.scenario.map.metersPerHex;
       const stationary = unit.weapon.stationaryOnly ? ' · stationary fire' : '';
-      this.elements.unitCard.innerHTML = `<b>${unit.id}</b> · ${unit.name}<div class="bar"><i style="width:${100 * unit.health / unit.maxHealth}%"></i></div><div class="statline"><span>Combat strength</span><span>${unit.health}/${unit.maxHealth}</span><span>Armor strength</span><span>${unit.armor}</span><span>Movement points</span><span>${this.game.formatPoints(unit.movementPoints)}/${unit.movement}</span><span>Reach remaining</span><span>${Math.round(unit.movementPoints * meters)} m</span><span>Facing</span><span>${this.game.facingName(unit.facing)}</span><span>Weapon</span><span>${unit.weapon.name}</span><span>Effective reach</span><span>${unit.weapon.maxRangeMeters} m</span><span>Crew quality</span><span>${Math.round(unit.crewSkill * 100)}%</span><span>Morale</span><span>${Math.round(unit.morale * 100)}%</span><span>Moved / fired</span><span>${unit.hasMoved ? '✓' : '○'} / ${unit.hasFired ? '✓' : '○'}</span></div><small>${stationary}</small>`;
+      const inCmd = this.game.isInCommand(unit);
+      const c2Status = unit.isLeader
+        ? `<span style="color:#60a5fa">★ Platoon HQ</span>`
+        : inCmd
+          ? `<span style="color:#72b65d">Linked (In C2)</span>`
+          : `<span style="color:#ef4444">Severed (Out of C2)</span>`;
+
+      const armorHtml = unit.armorAspect
+        ? `<span>Armor (F/S/R)</span><span>${unit.armorAspect.front} / ${unit.armorAspect.side} / ${unit.armorAspect.rear}</span>`
+        : `<span>Armor strength</span><span>${unit.armor}</span>`;
+
+      let detailHtml = '';
+      if (unit.subsystems) {
+        const s = unit.subsystems;
+        const eStr = s.engine === 'operational' ? 'OK' : '<b style="color:#f59e0b">DMG</b>';
+        const tStr = s.tracks === 'operational' ? 'OK' : '<b style="color:#ef4444">KILL</b>';
+        const oStr = s.optics === 'operational' ? 'OK' : '<b style="color:#f59e0b">DMG</b>';
+        const gStr = s.gun === 'operational' ? 'OK' : '<b style="color:#ef4444">DMG</b>';
+        detailHtml = `<span>Subsystems</span><span>ENG:${eStr} TRK:${tStr} OPT:${oStr} GUN:${gStr}</span>`;
+      } else if (unit.unitClass === 'infantry') {
+        const supprPct = Math.round((unit.suppression || 0) * 100);
+        const supprLabel = unit.suppression >= 0.7 ? '<b style="color:#ef4444">PINNED</b>' : unit.suppression >= 0.35 ? '<b style="color:#f59e0b">SUPPR</b>' : 'Steady';
+        detailHtml = `<span>Squad strength</span><span>${unit.soldiers || unit.health}/${unit.maxSoldiers || unit.maxHealth} Soldiers</span><span>Suppression</span><span>${supprPct}% (${supprLabel})</span>`;
+      }
+
+      this.elements.unitCard.innerHTML = `
+        <div style="margin-bottom:2px"><b>${unit.id}</b> · ${unit.name}</div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:6px">${unit.platoon || 'Tactical Element'} · ${unit.role || ''}</div>
+        <div class="bar"><i style="width:${100 * unit.health / unit.maxHealth}%"></i></div>
+        <div class="statline">
+          <span>Combat strength</span><span>${unit.health}/${unit.maxHealth}</span>
+          ${armorHtml}
+          <span>C2 Datalink</span><span>${c2Status}</span>
+          ${detailHtml}
+          <span>Movement points</span><span>${this.game.formatPoints(unit.movementPoints)}/${unit.movement}</span>
+          <span>Reach remaining</span><span>${Math.round(unit.movementPoints * meters)} m</span>
+          <span>Facing</span><span>${this.game.facingName(unit.facing)}</span>
+          <span>Primary Weapon</span><span>${unit.weapon.name}</span>
+          <span>Effective reach</span><span>${unit.weapon.maxRangeMeters} m</span>
+          <span>Crew quality</span><span>${Math.round(unit.crewSkill * 100)}%</span>
+          <span>Morale</span><span>${Math.round(unit.morale * 100)}%</span>
+          <span>Moved / fired</span><span>${unit.hasMoved ? '✓' : '○'} / ${unit.hasFired ? '✓' : '○'}</span>
+        </div>
+        <small>${stationary}</small>
+      `;
     }
 
     log(message) {
@@ -828,9 +1051,71 @@
 
     createUnits(definitions, types) {
       return definitions.map(definition => {
-        const type = types[definition.type];
-        return { ...definition, ...type, facing:definition.facing ?? 0, crewSkill:definition.crewSkill || 1, morale:definition.morale || 1, health:type.health, maxHealth:type.health, movementPoints:type.movement, hasMoved:false, hasFired:false };
+        const type = types[definition.type] || {};
+        const isInfantry = type.unitClass === 'infantry' || type.rotateSprite === false;
+        const unitClass = type.unitClass || (isInfantry ? 'infantry' : 'afv');
+
+        const defaultAspect = isInfantry
+          ? { front: type.armor || 2, side: type.armor || 2, rear: Math.max(1, (type.armor || 2) - 1), top: 1 }
+          : { front: type.armor || 10, side: Math.max(1, Math.round((type.armor || 10) * 0.6)), rear: Math.max(1, Math.round((type.armor || 10) * 0.4)), top: Math.max(1, Math.round((type.armor || 10) * 0.3)) };
+
+        const soldiers = definition.soldiers || type.soldiers || (isInfantry ? (type.health * 1.5) : null);
+
+        return {
+          ...definition,
+          ...type,
+          unitClass,
+          armorAspect: type.armorAspect ? { ...type.armorAspect } : defaultAspect,
+          subsystems: isInfantry ? null : {
+            optics: 'operational',
+            gun: 'operational',
+            engine: 'operational',
+            tracks: 'operational'
+          },
+          soldiers: soldiers,
+          maxSoldiers: soldiers,
+          suppression: 0,
+          facing: definition.facing ?? 0,
+          turretFacing: definition.facing ?? 0,
+          crewSkill: definition.crewSkill || 1,
+          morale: definition.morale || 1,
+          health: type.health,
+          maxHealth: type.health,
+          movementPoints: type.movement,
+          hasMoved: false,
+          hasFired: false,
+          company: definition.company || (definition.faction === 'US' ? 'A Co, 1-64 AR' : '1st Co, 124th Bde'),
+          platoon: definition.platoon || '1st Platoon',
+          role: definition.role || (definition.isLeader ? 'Platoon Leader' : 'Element'),
+          isLeader: !!definition.isLeader,
+          commandRadius: definition.commandRadius || (definition.isLeader ? 7 : 0),
+          inCommand: true
+        };
       });
+    }
+
+    isInCommand(unit) {
+      if (!unit || unit.health <= 0) return false;
+      if (unit.isLeader) return true;
+      const platoonLeader = this.livingUnits.find(u => u.faction === unit.faction && u.platoon === unit.platoon && u.isLeader);
+      if (platoonLeader) {
+        const dist = this.grid.distance(unit, platoonLeader);
+        if (dist <= (platoonLeader.commandRadius || 7)) return true;
+      }
+      const companyLeader = this.livingUnits.find(u => u.faction === unit.faction && u.isLeader);
+      if (companyLeader) {
+        const dist = this.grid.distance(unit, companyLeader);
+        if (dist <= (companyLeader.commandRadius || 7) + 2) return true;
+      }
+      return false;
+    }
+
+    getLeaderFor(unit) {
+      if (!unit) return null;
+      if (unit.isLeader) return unit;
+      return this.livingUnits.find(u => u.faction === unit.faction && u.platoon === unit.platoon && u.isLeader)
+        || this.livingUnits.find(u => u.faction === unit.faction && u.isLeader)
+        || null;
     }
 
     get livingUnits() { return this.units.filter(unit => unit.health > 0); }
@@ -862,6 +1147,11 @@
         this.cachedReachableKeys.clear();
         return this.cachedReachableCells;
       }
+      if (unit.subsystems?.tracks === 'mobility_kill' || (unit.unitClass === 'infantry' && unit.suppression >= 0.7)) {
+        this.cachedReachableCells = [];
+        this.cachedReachableKeys.clear();
+        return this.cachedReachableCells;
+      }
       this.cachedReachableCells = [...this.buildMovementMap(unit).values()].filter(node => node.cost > 0).map(node => node.cell);
       this.cachedReachableKeys = new Set(this.cachedReachableCells.map(cell => this.grid.key(cell)));
       return this.cachedReachableCells;
@@ -875,12 +1165,14 @@
       const startKey = this.grid.key(unit);
       const nodes = new Map([[startKey, { cell:{ q:unit.q, r:unit.r }, cost:0, previous:null }]]);
       const frontier = [nodes.get(startKey)];
+      const isDamagedEngine = unit.subsystems?.engine === 'damaged';
       while (frontier.length) {
         frontier.sort((a, b) => a.cost - b.cost);
         const current = frontier.shift();
         this.grid.neighbors(current.cell).forEach(cell => {
           if (this.unitAt(cell) && this.grid.key(cell) !== startKey) return;
-          const cost = current.cost + this.movementCost(cell);
+          const baseCost = this.movementCost(cell);
+          const cost = current.cost + (isDamagedEngine ? baseCost * 1.5 : baseCost);
           const key = this.grid.key(cell);
           if (cost > unit.movementPoints || (nodes.has(key) && nodes.get(key).cost <= cost)) return;
           const node = { cell, cost, previous:this.grid.key(current.cell) };
@@ -935,21 +1227,31 @@
     select(unit) { this.selected = unit; this.invalidateReachableCache(); this.ui.log(`Selected ${unit.id}.`); this.update(); }
 
     move(unit, destination) {
+      if (unit.subsystems?.tracks === 'mobility_kill') {
+        this.ui.log(`${unit.id} has suffered a mobility kill (tracks broken) and cannot maneuver.`);
+        return;
+      }
+      if (unit.unitClass === 'infantry' && unit.suppression >= 0.7) {
+        this.ui.log(`${unit.id} is pinned down by enemy fire and cannot maneuver.`);
+        return;
+      }
       this.invalidateReachableCache();
       const route = this.pathTo(unit, destination);
       if (!route || !route.cells.length) return;
       const startingPoints = unit.movementPoints;
       const startCell = { q: unit.q, r: unit.r };
       const steps = [...route.cells];
+      const isDamagedEngine = unit.subsystems?.engine === 'damaged';
       for (const step of steps) {
         unit.facing = this.directionAngle(unit, step);
         unit.q = step.q;
         unit.r = step.r;
-        unit.movementPoints -= this.movementCost(step);
+        const stepCost = this.movementCost(step) * (isDamagedEngine ? 1.5 : 1);
+        unit.movementPoints -= stepCost;
       }
       unit.hasMoved = true;
       const spent = startingPoints - unit.movementPoints;
-      this.ui.log(`${unit.id} spent ${spent} movement point${spent === 1 ? '' : 's'}; ${unit.movementPoints} remain.`);
+      this.ui.log(`${unit.id} spent ${this.formatPoints(spent)} movement points; ${this.formatPoints(unit.movementPoints)} remain.`);
       this.checkWinner();
 
       if (this.animConfig?.enabled && !isHeadless && steps.length > 0) {
@@ -1497,22 +1799,92 @@
       const distanceMeters = distance * this.scenario.map.metersPerHex;
       const accuracy = this.calculateAccuracy(attacker, target, distanceMeters);
       const hit = this.random() <= accuracy;
-      const penetrationMargin = attacker.weapon.penetration - target.armor;
+
+      // Calculate aspect angle (Front, Side, Rear)
+      const fromPos = this.grid.toPixel(attacker);
+      const toPos = this.grid.toPixel(target);
+      const incomingAngle = Math.atan2(fromPos.y - toPos.y, fromPos.x - toPos.x);
+      let angleDiff = incomingAngle - (target.facing !== undefined ? target.facing : 0);
+      angleDiff = Math.atan2(Math.sin(angleDiff), Math.cos(angleDiff));
+      const absAngleDeg = Math.abs(angleDiff) * (180 / Math.PI);
+
+      let aspect = 'side';
+      if (absAngleDeg <= 45) {
+        aspect = 'front';
+      } else if (absAngleDeg >= 135) {
+        aspect = 'rear';
+      } else {
+        aspect = 'side';
+      }
+
+      const effectiveArmor = (target.armorAspect && target.armorAspect[aspect] !== undefined)
+        ? target.armorAspect[aspect]
+        : (target.armor !== undefined ? target.armor : 5);
+
+      const penetrationMargin = attacker.weapon.penetration - effectiveArmor;
       const penetrated = hit && this.random() <= Math.max(0.2, Math.min(0.9, 0.55 + penetrationMargin * 0.12));
       const damage = penetrated ? Math.max(1, 3 + penetrationMargin + Math.floor(this.random() * 3)) : hit ? 1 : 0;
-      const result = !hit ? 'miss' : penetrated ? `PENETRATION for ${damage}` : 'hit, armor held';
-      return { attacker, target, distanceMeters, accuracy, hit, penetrated, damage, result };
+
+      let critical = null;
+      if (penetrated && target.unitClass !== 'infantry' && target.subsystems) {
+        const critRoll = this.random();
+        if (critRoll < 0.22 && target.subsystems.tracks === 'operational') {
+          critical = { system: 'tracks', label: 'Mobility Kill (Track Thrown)' };
+        } else if (critRoll < 0.44 && target.subsystems.engine === 'operational') {
+          critical = { system: 'engine', label: 'Engine Fire / Damaged' };
+        } else if (critRoll < 0.64 && target.subsystems.optics === 'operational') {
+          critical = { system: 'optics', label: 'Optics/FCS Blinded' };
+        } else if (critRoll < 0.80 && target.subsystems.gun === 'operational') {
+          critical = { system: 'gun', label: 'Main Gun Damaged' };
+        }
+      }
+
+      const aspectLabel = aspect.toUpperCase();
+      let result = !hit
+        ? 'miss'
+        : penetrated
+          ? `PENETRATION (${aspectLabel} armor: ${effectiveArmor}) for ${damage}`
+          : `hit (${aspectLabel} armor: ${effectiveArmor}), armor held`;
+      if (critical) {
+        result += ` [CRITICAL: ${critical.label}]`;
+      }
+
+      return { attacker, target, distanceMeters, accuracy, hit, penetrated, damage, result, aspect, critical };
     }
 
     applyAttackOutcome(outcome) {
       if (!outcome || !outcome.target) return;
-      const { attacker, target, distanceMeters, accuracy, hit, penetrated, damage, result } = outcome;
+      const { attacker, target, distanceMeters, accuracy, hit, penetrated, damage, result, critical } = outcome;
       if (attacker && target && distanceMeters !== undefined && accuracy !== undefined) {
         this.ui.log(`${attacker.id} fires at ${target.id} (${distanceMeters} m, ${Math.round(accuracy * 100)}% solution): ${result}.`);
       }
       if (hit) {
         target.health = Math.max(0, target.health - damage);
+        if (critical && target.subsystems) {
+          if (critical.system === 'tracks') {
+            target.subsystems.tracks = 'mobility_kill';
+            target.movementPoints = 0;
+          } else if (critical.system === 'engine') {
+            target.subsystems.engine = 'damaged';
+            target.movementPoints = Math.floor(target.movementPoints / 2);
+          } else if (critical.system === 'optics') {
+            target.subsystems.optics = 'damaged';
+          } else if (critical.system === 'gun') {
+            target.subsystems.gun = 'damaged';
+          }
+        }
+        if (target.unitClass === 'infantry') {
+          target.suppression = Math.min(1.0, (target.suppression || 0) + (penetrated ? 0.40 : 0.25));
+          if (target.soldiers) {
+            const lost = Math.min(target.soldiers, Math.max(1, Math.round(damage * (target.soldiers / (target.maxHealth || 8)))));
+            target.soldiers = Math.max(0, target.soldiers - lost);
+          }
+        }
         this.showImpact(target);
+      } else {
+        if (target.unitClass === 'infantry') {
+          target.suppression = Math.min(1.0, (target.suppression || 0) + 0.15);
+        }
       }
       if (!target.health) {
         this.stopUnitAnimation(target);
@@ -1657,6 +2029,21 @@
       if (distanceMeters > environment.crosswindPenaltyBeyondMeters) accuracy *= environment.crosswindAccuracyModifier;
       const targetTerrain = this.scenario.terrainTypes[this.terrainAt(target)];
       accuracy -= (targetTerrain?.defense || 0) * 0.10;
+
+      // Subsystem & C2 accuracy modifiers
+      if (attacker.subsystems?.optics === 'damaged') {
+        accuracy *= 0.75;
+      }
+      if (attacker.subsystems?.gun === 'damaged') {
+        accuracy *= 0.65;
+      }
+      if (attacker.unitClass === 'infantry' && attacker.suppression > 0.3) {
+        accuracy *= Math.max(0.3, 1.0 - (attacker.suppression * 0.45));
+      }
+      if (!this.isInCommand(attacker)) {
+        accuracy *= 0.90;
+      }
+
       return Math.max(0.05, Math.min(0.95, accuracy));
     }
 
@@ -1682,7 +2069,21 @@
       const nextIndex = (currentIndex + 1) % this.scenario.turnOrder.length;
       if (nextIndex === 0) this.turn += 1;
       this.activeFaction = this.scenario.turnOrder[nextIndex];
-      this.units.filter(unit => unit.faction === this.activeFaction).forEach(unit => { unit.movementPoints = unit.movement; unit.hasMoved = false; unit.hasFired = false; });
+      this.units.filter(unit => unit.faction === this.activeFaction).forEach(unit => {
+        let baseMv = unit.movement;
+        if (unit.subsystems?.tracks === 'mobility_kill') {
+          baseMv = 0;
+        } else if (unit.subsystems?.engine === 'damaged') {
+          baseMv = Math.max(1, Math.floor(baseMv / 2));
+        }
+        unit.movementPoints = baseMv;
+        unit.hasMoved = false;
+        unit.hasFired = false;
+        if (unit.unitClass === 'infantry') {
+          const inCmd = this.isInCommand(unit);
+          unit.suppression = Math.max(0, (unit.suppression || 0) - (inCmd ? 0.35 : 0.15));
+        }
+      });
       this.ui.log(`${this.factions[this.activeFaction].name} begins turn ${this.turn}.`);
       this.checkWinner();
       const eventStarted = !this.gameOver && this.triggerTurnEvent();
@@ -1850,6 +2251,177 @@
       this.gameOver = true;
       this.ui.showWinner(winner, this.scenario.victoryMessage(winner));
       this.ui.log(`SCENARIO COMPLETE — ${this.factions[winner].victoryName} wins.`);
+    }
+
+    showOrderOfBattleModal() {
+      if (!this.dialog) return;
+
+      const factions = this.scenario.turnOrder;
+      let html = '<div class="oobTree" style="display:flex;flex-direction:column;gap:16px;max-height:60vh;overflow-y:auto;padding-right:8px">';
+
+      for (const fId of factions) {
+        const faction = this.factions[fId];
+        const fUnits = this.units.filter(u => u.faction === fId);
+        const livingCount = fUnits.filter(u => u.health > 0).length;
+
+        html += `
+          <div style="border-left:4px solid ${faction.color};padding-left:12px;background:rgba(255,255,255,0.02);padding:10px;border-radius:4px">
+            <h3 style="margin:0 0 6px;color:${faction.color};font-size:15px">${faction.name} (Active: ${livingCount}/${fUnits.length})</h3>
+        `;
+
+        // Group by Platoon
+        const platoons = {};
+        for (const u of fUnits) {
+          const pltKey = u.platoon || 'Independent Elements';
+          if (!platoons[pltKey]) platoons[pltKey] = [];
+          platoons[pltKey].push(u);
+        }
+
+        for (const [pltName, pUnits] of Object.entries(platoons)) {
+          const leader = pUnits.find(u => u.isLeader);
+          html += `
+            <div style="margin:8px 0 4px;padding:6px 8px;background:rgba(0,0,0,0.3);border:1px solid #333">
+              <div style="font-weight:bold;color:#f1f5f9;font-size:12px">▸ ${pltName} ${leader ? `(HQ: ${leader.id})` : ''}</div>
+              <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:6px;margin-top:6px">
+          `;
+
+          for (const u of pUnits) {
+            const isAlive = u.health > 0;
+            const inCmd = this.isInCommand(u);
+            const statusColor = !isAlive ? '#64748b' : inCmd ? '#22c55e' : '#f97316';
+            const statusText = !isAlive ? 'DESTROYED' : inCmd ? 'IN C2' : 'OUT OF C2';
+
+            let extraInfo = '';
+            if (isAlive) {
+              if (u.subsystems) {
+                const s = u.subsystems;
+                const faults = [];
+                if (s.tracks === 'mobility_kill') faults.push('TRK-KILL');
+                if (s.engine === 'damaged') faults.push('ENG-DMG');
+                if (s.gun === 'damaged') faults.push('GUN-DMG');
+                if (s.optics === 'damaged') faults.push('OPT-DMG');
+                extraInfo = faults.length ? `<span style="color:#ef4444">${faults.join(', ')}</span>` : `<span style="color:#22c55e">All Systems Nominal</span>`;
+              } else if (u.unitClass === 'infantry') {
+                extraInfo = `<span>${u.soldiers || u.health}/${u.maxSoldiers || u.maxHealth} Soldiers · ${Math.round((u.suppression || 0) * 100)}% Suppr</span>`;
+              }
+            }
+
+            html += `
+              <div style="padding:6px;border:1px solid #3c3828;background:${isAlive ? '#181913' : '#10100d'};font-size:11px">
+                <div style="display:flex;justify-content:space-between">
+                  <strong>${u.id}</strong>
+                  <span style="color:${statusColor}">${statusText}</span>
+                </div>
+                <div style="color:var(--muted)">${u.name}</div>
+                <div style="font-size:10px;margin-top:2px">${extraInfo}</div>
+              </div>
+            `;
+          }
+
+          html += `</div></div>`;
+        }
+
+        html += `</div>`;
+      }
+
+      html += '</div>';
+
+      this.dialog.show({
+        eyebrow: 'BATTLEFIELD MANAGEMENT SYSTEM',
+        title: 'ORDER OF BATTLE & C2 NETWORK',
+        bodyHtml: html,
+        actions: [{ label: 'Dismiss', onClick: () => this.dialog.hide() }]
+      });
+    }
+
+    showForceBuilderModal() {
+      if (!this.dialog) return;
+
+      const currentTurns = this.scenario.turnLimit || 14;
+      const currentVis = this.scenario.environment.visibilityMeters || 3500;
+      const currentWind = this.scenario.environment.crosswindMps || 5;
+
+      const html = `
+        <div style="line-height:1.6">
+          <p>Customize battlefield environment, operational tempo, and forces for this engagement:</p>
+          <div style="display:flex;flex-direction:column;gap:12px;margin:14px 0">
+            <label style="display:flex;justify-content:space-between;align-items:center">
+              <span><b>Turn Limit:</b></span>
+              <select id="cfgTurns" style="padding:4px 8px;background:#202117;color:#fff;border:1px solid #666">
+                <option value="10" ${currentTurns === 10 ? 'selected' : ''}>10 Turns (Rapid Assault)</option>
+                <option value="14" ${currentTurns === 14 ? 'selected' : ''}>14 Turns (Standard Scenario)</option>
+                <option value="20" ${currentTurns === 20 ? 'selected' : ''}>20 Turns (Extended Grinding Operation)</option>
+              </select>
+            </label>
+            <label style="display:flex;justify-content:space-between;align-items:center">
+              <span><b>Weather & Visibility:</b></span>
+              <select id="cfgWeather" style="padding:4px 8px;background:#202117;color:#fff;border:1px solid #666">
+                <option value="clear" ${currentVis >= 3500 ? 'selected' : ''}>Clear Desert (3,500 m / Full Vision)</option>
+                <option value="dust" ${currentVis === 2200 ? 'selected' : ''}>Dust Storm (2,200 m / Thermal Advantage)</option>
+                <option value="night" ${currentVis <= 1500 ? 'selected' : ''}>Dusk / Night (1,500 m / Knife-Fight Range)</option>
+              </select>
+            </label>
+            <label style="display:flex;justify-content:space-between;align-items:center">
+              <span><b>Crosswind Severity:</b></span>
+              <select id="cfgWind" style="padding:4px 8px;background:#202117;color:#fff;border:1px solid #666">
+                <option value="light" ${currentWind <= 5 ? 'selected' : ''}>Light Breeze (5 m/s - 95% at range)</option>
+                <option value="gusting" ${currentWind > 5 ? 'selected' : ''}>High Gale (12 m/s - 85% at range)</option>
+              </select>
+            </label>
+            <label style="display:flex;justify-content:space-between;align-items:center">
+              <span><b>Apache CAS Sorties (US Turn 3):</b></span>
+              <select id="cfgCas" style="padding:4px 8px;background:#202117;color:#fff;border:1px solid #666">
+                <option value="3" selected>3 Hellfire Missile Strikes</option>
+                <option value="5">5 Hellfire Heavy Air Strike</option>
+                <option value="0">0 Ground Only (No Air Support)</option>
+              </select>
+            </label>
+          </div>
+        </div>
+      `;
+
+      this.dialog.show({
+        eyebrow: 'SANDBOX CONFIGURATION',
+        title: 'FORCE & BATTLEFIELD BUILDER',
+        bodyHtml: html,
+        actions: [
+          {
+            label: 'Apply & Restart Battle',
+            primary: true,
+            onClick: () => {
+              const turns = parseInt(document.getElementById('cfgTurns')?.value || '14', 10);
+              const weather = document.getElementById('cfgWeather')?.value || 'clear';
+              const wind = document.getElementById('cfgWind')?.value || 'light';
+              const cas = parseInt(document.getElementById('cfgCas')?.value || '3', 10);
+
+              this.scenario.turnLimit = turns;
+              if (weather === 'dust') {
+                this.scenario.environment.visibilityMeters = 2200;
+              } else if (weather === 'night') {
+                this.scenario.environment.visibilityMeters = 1500;
+              } else {
+                this.scenario.environment.visibilityMeters = 3500;
+              }
+
+              if (wind === 'gusting') {
+                this.scenario.environment.crosswindMps = 12;
+                this.scenario.environment.crosswindAccuracyModifier = 0.85;
+              } else {
+                this.scenario.environment.crosswindMps = 5;
+                this.scenario.environment.crosswindAccuracyModifier = 0.95;
+              }
+
+              if (this.scenario.airSupport) {
+                this.scenario.airSupport.strikes = cas;
+              }
+
+              this.dialog.hide();
+              window.location.reload();
+            }
+          },
+          { label: 'Cancel', onClick: () => this.dialog.hide() }
+        ]
+      });
     }
 
     render() { this.renderer?.draw(); }

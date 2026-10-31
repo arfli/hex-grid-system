@@ -7,6 +7,8 @@ h1 { margin:0; font:700 20px/1.1 system-ui; letter-spacing:.08em; text-transform
 .kicker { color:var(--accent); font-size:11px; letter-spacing:.16em; }
 .scale { color:var(--muted); text-align:right; } .scale b { color:var(--ink); }
 .headerTools { display:flex; align-items:center; justify-content:flex-end; gap:10px; } .headerTools label { color:var(--muted); font-size:11px; text-transform:uppercase; } select { border:1px solid #686448; background:#292a21; color:var(--ink); padding:7px 9px; font:12px ui-monospace; }
+.headerTools button { padding:6px 10px; font-size:11px; background:#25261d; border:1px solid #686448; color:var(--ink); cursor:pointer; }
+.headerTools button:hover { background:#3e4030; border-color:#8e8964; }
 main { display:grid; grid-template-columns:minmax(0,1fr) 310px; height:100%; min-height:0; overflow:hidden; }
 #boardWrap { position:relative; min-width:0; min-height:0; height:100%; background:#272317; overflow:auto; padding:18px; overscroll-behavior:contain; scrollbar-color:#777155 #24241d; cursor:grab; user-select:none; touch-action:none; }
 #boardWrap.is-panning { cursor:grabbing; }

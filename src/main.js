@@ -9,10 +9,23 @@
 
   const scenarioPicker = document.getElementById('scenarioPicker');
   const sidePicker = document.getElementById('sidePicker');
+  const btnOob = document.getElementById('btnOob');
+  const btnForceBuilder = document.getElementById('btnForceBuilder');
   const canvas = document.getElementById('game');
   const dialog = new window.HexWar.ModalDialog(document.getElementById('dialog'));
   const storyIntro = new window.HexWar.StoryIntro(document.getElementById('storyIntro'));
   let game = null;
+
+  if (btnOob) {
+    btnOob.addEventListener('click', () => {
+      if (game) game.showOrderOfBattleModal();
+    });
+  }
+  if (btnForceBuilder) {
+    btnForceBuilder.addEventListener('click', () => {
+      if (game) game.showForceBuilderModal();
+    });
+  }
 
   Object.values(scenarios).forEach(item => {
     scenarioPicker.add(new Option(item.title, item.id, false, item.id === scenario.id));

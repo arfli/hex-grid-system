@@ -82,35 +82,110 @@
     ],
 
     unitTypes: {
-      abrams:{ name:'M1A1 Abrams Platoon', image:'abrams', health:12, armor:10, movement:5, weapons:['m256_120', 'm240_coax'], weapon:{ name:'120 mm M256', maxRangeMeters:3000, optimalRangeMeters:2000, baseAccuracy:0.84, longRangeAccuracy:0.60, penetration:11 } },
-      bradley:{ name:'M2 Bradley Mech Platoon', image:'bradley', health:7, armor:5, movement:6, weapons:['tow_2b', 'm242_25'], weapon:{ name:'BGM-71 TOW', maxRangeMeters:3750, optimalRangeMeters:2500, baseAccuracy:0.80, longRangeAccuracy:0.61, penetration:10, stationaryOnly:true } },
-      type99:{ name:'ZTZ-99 MBT Platoon', image:'type99', health:12, armor:10, movement:5, weapons:['zpt98_125', 'type86_coax'], weapon:{ name:'125 mm smoothbore', maxRangeMeters:3000, optimalRangeMeters:2000, baseAccuracy:0.79, longRangeAccuracy:0.56, penetration:11 } },
-      zbd04:{ name:'ZBD-04 IFV Platoon', image:'zbd04', health:8, armor:6, movement:6, weapons:['type03_100', 'type02_30'], weapon:{ name:'100 mm gun / ATGM', maxRangeMeters:4000, optimalRangeMeters:2200, baseAccuracy:0.74, longRangeAccuracy:0.52, penetration:9 } },
-      irgc:{ name:'IRGC Fortified ATGM Platoon', image:'irgc', health:8, armor:4, movement:0, rotateSprite:false, weapons:['dehlavieh_atgm', 'pkm_mg'], weapon:{ name:'ATGM network', maxRangeMeters:2500, optimalRangeMeters:1600, baseAccuracy:0.68, longRangeAccuracy:0.43, penetration:9, stationaryOnly:true } },
-      volunteers:{ name:'Iranian Volunteer Platoon', image:'volunteers', health:5, armor:2, movement:0, rotateSprite:false, weapons:['rpg_launcher', 'type56_akm'], weapon:{ name:'Rifle / RPG concentration', maxRangeMeters:600, optimalRangeMeters:300, baseAccuracy:0.52, longRangeAccuracy:0.27, penetration:6, stationaryOnly:true } }
+      abrams:{
+        name:'M1A1 Abrams MBT',
+        unitClass:'afv',
+        image:'abrams',
+        health:12,
+        armor:10,
+        armorAspect:{ front:10, side:6, rear:4, top:3 },
+        movement:5,
+        weapons:['m256_120', 'm240_coax'],
+        weapon:{ name:'120 mm M256', maxRangeMeters:3000, optimalRangeMeters:2000, baseAccuracy:0.84, longRangeAccuracy:0.60, penetration:11 }
+      },
+      bradley:{
+        name:'M2A2 Bradley IFV',
+        unitClass:'afv',
+        image:'bradley',
+        health:7,
+        armor:5,
+        armorAspect:{ front:5, side:3, rear:2, top:2 },
+        movement:6,
+        weapons:['tow_2b', 'm242_25'],
+        weapon:{ name:'BGM-71 TOW', maxRangeMeters:3750, optimalRangeMeters:2500, baseAccuracy:0.80, longRangeAccuracy:0.61, penetration:10, stationaryOnly:true }
+      },
+      type99:{
+        name:'ZTZ-99A MBT',
+        unitClass:'afv',
+        image:'type99',
+        health:12,
+        armor:10,
+        armorAspect:{ front:10, side:6, rear:4, top:3 },
+        movement:5,
+        weapons:['zpt98_125', 'type86_coax'],
+        weapon:{ name:'125 mm smoothbore', maxRangeMeters:3000, optimalRangeMeters:2000, baseAccuracy:0.79, longRangeAccuracy:0.56, penetration:11 }
+      },
+      zbd04:{
+        name:'ZBD-04 IFV',
+        unitClass:'afv',
+        image:'zbd04',
+        health:8,
+        armor:6,
+        armorAspect:{ front:6, side:3, rear:2, top:2 },
+        movement:6,
+        weapons:['type03_100', 'type02_30'],
+        weapon:{ name:'100 mm gun / ATGM', maxRangeMeters:4000, optimalRangeMeters:2200, baseAccuracy:0.74, longRangeAccuracy:0.52, penetration:9 }
+      },
+      irgc:{
+        name:'IRGC ATGM Team (Dehlavieh)',
+        unitClass:'infantry',
+        soldiers:4,
+        image:'irgc',
+        health:8,
+        armor:4,
+        armorAspect:{ front:4, side:4, rear:3, top:2 },
+        movement:0,
+        rotateSprite:false,
+        weapons:['dehlavieh_atgm', 'pkm_mg'],
+        weapon:{ name:'ATGM network', maxRangeMeters:2500, optimalRangeMeters:1600, baseAccuracy:0.68, longRangeAccuracy:0.43, penetration:9, stationaryOnly:true }
+      },
+      volunteers:{
+        name:'Iranian Volunteer Squad',
+        unitClass:'infantry',
+        soldiers:9,
+        image:'volunteers',
+        health:5,
+        armor:2,
+        armorAspect:{ front:2, side:2, rear:2, top:1 },
+        movement:0,
+        rotateSprite:false,
+        weapons:['rpg_launcher', 'type56_akm'],
+        weapon:{ name:'Rifle / RPG concentration', maxRangeMeters:600, optimalRangeMeters:300, baseAccuracy:0.52, longRangeAccuracy:0.27, penetration:6, stationaryOnly:true }
+      }
     },
 
     units: [
-      place('SABER-1','US','abrams',4,7,{ crewSkill:1.06, morale:0.84, facing:0 }),
-      place('SABER-2','US','abrams',5,12,{ crewSkill:1.03, morale:0.82, facing:0 }),
-      place('SABER-3','US','abrams',4,18,{ crewSkill:1.04, morale:0.86, facing:0 }),
-      place('SABER-4','US','abrams',5,24,{ crewSkill:1.00, morale:0.80, facing:0 }),
-      place('RANGER-1','US','bradley',7,9,{ crewSkill:1.02, morale:0.84, facing:0 }),
-      place('RANGER-2','US','bradley',7,15,{ crewSkill:1.00, morale:0.82, facing:0 }),
-      place('RANGER-3','US','bradley',7,21,{ crewSkill:1.01, morale:0.83, facing:0 }),
-      place('DRAGON-1','COALITION','type99',35,6,{ crewSkill:1.02, morale:1.05, facing:Math.PI }),
-      place('DRAGON-2','COALITION','type99',36,13,{ crewSkill:1.00, morale:1.04, facing:Math.PI }),
-      place('DRAGON-3','COALITION','type99',36,22,{ crewSkill:0.98, morale:1.04, facing:Math.PI }),
-      place('DRAGON-4','COALITION','type99',35,28,{ crewSkill:1.01, morale:1.05, facing:Math.PI }),
-      place('JADE-1','COALITION','zbd04',38,9,{ crewSkill:0.98, morale:1.02, facing:Math.PI }),
-      place('JADE-2','COALITION','zbd04',38,25,{ crewSkill:0.96, morale:1.02, facing:Math.PI }),
-      place('IRGC-1','COALITION','irgc',37,4,{ crewSkill:0.96, morale:1.12, facing:Math.PI }),
-      place('IRGC-2','COALITION','irgc',37,14,{ crewSkill:1.00, morale:1.12, facing:Math.PI }),
-      place('IRGC-3','COALITION','irgc',38,19,{ crewSkill:0.98, morale:1.10, facing:Math.PI }),
-      place('IRGC-4','COALITION','irgc',38,29,{ crewSkill:0.94, morale:1.10, facing:Math.PI }),
-      place('VOL-1','COALITION','volunteers',40,11,{ crewSkill:0.78, morale:1.08, facing:Math.PI }),
-      place('VOL-2','COALITION','volunteers',40,17,{ crewSkill:0.76, morale:1.08, facing:Math.PI }),
-      place('VOL-3','COALITION','volunteers',40,24,{ crewSkill:0.74, morale:1.06, facing:Math.PI })
+      // US Task Force 1-64 Armor: A Company (Saber Platoon)
+      place('SABER-1','US','abrams',4,7,{ crewSkill:1.06, morale:0.84, facing:0, company:'A Co, 1-64 AR', platoon:'1st Platoon (Saber)', role:'Platoon Leader', isLeader:true, commandRadius:7 }),
+      place('SABER-2','US','abrams',5,12,{ crewSkill:1.03, morale:0.82, facing:0, company:'A Co, 1-64 AR', platoon:'1st Platoon (Saber)', role:'Wingman' }),
+      place('SABER-3','US','abrams',4,18,{ crewSkill:1.04, morale:0.86, facing:0, company:'A Co, 1-64 AR', platoon:'1st Platoon (Saber)', role:'Platoon Sergeant' }),
+      place('SABER-4','US','abrams',5,24,{ crewSkill:1.00, morale:0.80, facing:0, company:'A Co, 1-64 AR', platoon:'1st Platoon (Saber)', role:'Wingman' }),
+
+      // US Task Force 3-15 Infantry: B Company (Ranger Mech Platoon)
+      place('RANGER-1','US','bradley',7,9,{ crewSkill:1.02, morale:0.84, facing:0, company:'B Co, 3-15 IN', platoon:'2nd Mech Platoon (Ranger)', role:'Mech Platoon Leader', isLeader:true, commandRadius:7 }),
+      place('RANGER-2','US','bradley',7,15,{ crewSkill:1.00, morale:0.82, facing:0, company:'B Co, 3-15 IN', platoon:'2nd Mech Platoon (Ranger)', role:'Wingman' }),
+      place('RANGER-3','US','bradley',7,21,{ crewSkill:1.01, morale:0.83, facing:0, company:'B Co, 3-15 IN', platoon:'2nd Mech Platoon (Ranger)', role:'Platoon Sergeant' }),
+
+      // Coalition 124th Armored Brigade: 1st Armored Company (Dragon Platoon)
+      place('DRAGON-1','COALITION','type99',35,6,{ crewSkill:1.02, morale:1.05, facing:Math.PI, company:'1st Tank Co, 124th Bde', platoon:'1st Armored Platoon (Dragon)', role:'Platoon Leader', isLeader:true, commandRadius:7 }),
+      place('DRAGON-2','COALITION','type99',36,13,{ crewSkill:1.00, morale:1.04, facing:Math.PI, company:'1st Tank Co, 124th Bde', platoon:'1st Armored Platoon (Dragon)', role:'Wingman' }),
+      place('DRAGON-3','COALITION','type99',36,22,{ crewSkill:0.98, morale:1.04, facing:Math.PI, company:'1st Tank Co, 124th Bde', platoon:'1st Armored Platoon (Dragon)', role:'Platoon Sergeant' }),
+      place('DRAGON-4','COALITION','type99',35,28,{ crewSkill:1.01, morale:1.05, facing:Math.PI, company:'1st Tank Co, 124th Bde', platoon:'1st Armored Platoon (Dragon)', role:'Wingman' }),
+
+      // Coalition 124th Armored Brigade: 2nd Mech Company (Jade Platoon)
+      place('JADE-1','COALITION','zbd04',38,9,{ crewSkill:0.98, morale:1.02, facing:Math.PI, company:'2nd Mech Co, 124th Bde', platoon:'2nd Mech Platoon (Jade)', role:'Mech Platoon Leader', isLeader:true, commandRadius:7 }),
+      place('JADE-2','COALITION','zbd04',38,25,{ crewSkill:0.96, morale:1.02, facing:Math.PI, company:'2nd Mech Co, 124th Bde', platoon:'2nd Mech Platoon (Jade)', role:'Wingman' }),
+
+      // Coalition Fortified ATGM Defense Network (IRGC)
+      place('IRGC-1','COALITION','irgc',37,4,{ crewSkill:0.96, morale:1.12, facing:Math.PI, company:'IRGC Ahvaz Defense Force', platoon:'3rd ATGM Defense Section', role:'Section Leader', isLeader:true, commandRadius:8 }),
+      place('IRGC-2','COALITION','irgc',37,14,{ crewSkill:1.00, morale:1.12, facing:Math.PI, company:'IRGC Ahvaz Defense Force', platoon:'3rd ATGM Defense Section', role:'ATGM Team 2' }),
+      place('IRGC-3','COALITION','irgc',38,19,{ crewSkill:0.98, morale:1.10, facing:Math.PI, company:'IRGC Ahvaz Defense Force', platoon:'3rd ATGM Defense Section', role:'ATGM Team 3' }),
+      place('IRGC-4','COALITION','irgc',38,29,{ crewSkill:0.94, morale:1.10, facing:Math.PI, company:'IRGC Ahvaz Defense Force', platoon:'3rd ATGM Defense Section', role:'ATGM Team 4' }),
+
+      // Coalition Local Popular Defense (Volunteer Infantry Squads)
+      place('VOL-1','COALITION','volunteers',40,11,{ crewSkill:0.78, morale:1.08, facing:Math.PI, company:'Khuzestan Popular Defense', platoon:'1st Volunteer Detachment', role:'Squad Leader', isLeader:true, commandRadius:6 }),
+      place('VOL-2','COALITION','volunteers',40,17,{ crewSkill:0.76, morale:1.08, facing:Math.PI, company:'Khuzestan Popular Defense', platoon:'1st Volunteer Detachment', role:'Rifle Squad 2' }),
+      place('VOL-3','COALITION','volunteers',40,24,{ crewSkill:0.74, morale:1.06, facing:Math.PI, company:'Khuzestan Popular Defense', platoon:'1st Volunteer Detachment', role:'Rifle Squad 3' })
     ],
 
     intro:{
@@ -149,7 +224,7 @@
       }
     },
 
-    missionHtml:'Scale: one counter is one platoon (3–4 vehicles or 30–40 infantry); one hex is 100 m.<br><br><b>USA:</b> breach the eastern defensive line. At 50% aggregate starting strength, the spearhead withdraws. Apache CAS arrives on turn 3, subject to coalition air defenses.<br><br><b>Alliance:</b> prevent a breach and reduce the U.S. spearhead to half strength.',
+    missionHtml:'Scale: 1 counter = 1 individual vehicle or infantry squad/team. 1 hex = 100 m.<br><br><b>USA:</b> Breach the eastern defensive line. At 50% aggregate starting strength, the spearhead withdraws. Apache CAS arrives on turn 3, subject to coalition air defenses.<br><br><b>Alliance:</b> Prevent a breach and reduce the U.S. spearhead to half strength.',
     openingLog:['Missile impacts walk across the Ahvaz highway—but the defense remains intact.','Unexpected contact: Chinese armor and Iranian prepared positions ahead.','U.S. cohesion is fragile. A 50% strength loss will force withdrawal.'],
 
     determineWinner(game) {
