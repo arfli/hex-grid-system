@@ -10,10 +10,22 @@
     durationPerHex: 240, // ms per hex (~0.24s for smooth tank glide)
     settleDuration: 130, // ms for arrival bounce/settle
     bob: true,           // subtle vertical hop while moving
-    bobHeight: 5,        // max pixel bob height
+    bobHeight: 3,        // max pixel bob height
     shadow: true,        // soft ground shadow under moving unit
     dust: true,          // dust particles at entered hexes
     settle: true         // slight bounce on arrival
+  };
+
+  // Per-sprite alpha-bounds & hull-pivot normalization metadata.
+  // Prevents aspect-ratio squashing, normalizes hull height relative to hexSize,
+  // and centers long-barreled tanks on their hull/turret rather than barrel tip.
+  const UNIT_SPRITE_META = {
+    abrams:  { aspect: 512 / 231, hullHeightRatio: 0.74, activeYRatio: 0.835, centerShiftX: 0.094 },
+    type99:  { aspect: 533 / 177, hullHeightRatio: 0.72, activeYRatio: 1.000, centerShiftX: 0.086 },
+    bradley: { aspect: 245 / 119, hullHeightRatio: 0.66, activeYRatio: 0.950, centerShiftX: -0.006 },
+    zbd04:   { aspect: 403 / 177, hullHeightRatio: 0.66, activeYRatio: 0.983, centerShiftX: 0.007 },
+    irgc:       { aspect: 120 / 80, maxHexRatio: 1.05, centerShiftX: 0 },
+    volunteers: { aspect: 120 / 80, maxHexRatio: 1.05, centerShiftX: 0 }
   };
 
   class HexGrid {
@@ -462,14 +474,16 @@
     drawObjective(objective, index) {
       const ctx = this.context;
       const center = this.game.grid.toPixel(objective);
+      const size = this.game.grid.size;
+      const scale = size / 54;
       const owner = this.game.objectiveOwner(objective);
       ctx.fillStyle = owner ? this.game.factions[owner].color : '#ffe580';
-      ctx.font = 'bold 26px sans-serif';
+      ctx.font = `bold ${Math.max(16, Math.round(26 * scale))}px sans-serif`;
       ctx.textAlign = 'center';
-      ctx.fillText('◆', center.x, center.y - 23);
+      ctx.fillText('◆', center.x, center.y - Math.round(23 * scale));
       ctx.fillStyle = '#fff';
-      ctx.font = 'bold 10px ui-monospace';
-      ctx.fillText(String(index + 1), center.x, center.y - 29);
+      ctx.font = `bold ${Math.max(8, Math.round(10 * scale))}px ui-monospace`;
+      ctx.fillText(String(index + 1), center.x, center.y - Math.round(29 * scale));
     }
 
     drawTacticalDatalinks() {
@@ -545,48 +559,126 @@
       ctx.restore();
     }
 
+    getUnitDrawMetrics(unit, hexSize) {
+      const assetId = `unit:${unit.image}`;
+      const image = this.game.assets.get(assetId);
+      const meta = UNIT_SPRITE_META[unit.image] || UNIT_SPRITE_META[unit.type] || null;
+      const naturalAspect = (image && image.complete && image.naturalWidth && image.naturalHeight)
+        ? (image.naturalWidth / image.naturalHeight)
+        : (meta && meta.aspect) || 1.72;
+
+      let drawW;
+      let drawH;
+      let visibleHullH;
+      const centerShiftX = (meta && meta.centerShiftX) || 0;
+
+      if (meta && meta.hullHeightRatio) {
+        visibleHullH = hexSize * meta.hullHeightRatio;
+        drawH = visibleHullH / (meta.activeYRatio || 1);
+        drawW = drawH * naturalAspect;
+      } else {
+        const maxDim = hexSize * ((meta && meta.maxHexRatio) || 1.15);
+        if (naturalAspect >= 1) {
+          drawW = maxDim;
+          drawH = maxDim / naturalAspect;
+        } else {
+          drawH = maxDim;
+          drawW = maxDim * naturalAspect;
+        }
+        visibleHullH = drawH * 0.85;
+      }
+
+      return { assetId, drawW, drawH, visibleHullH, centerShiftX };
+    }
+
     drawUnit(unit) {
       const ctx = this.context;
+      const size = this.game.grid.size;
       const anim = unit.animState;
       const center = anim ? { x: anim.renderX, y: anim.renderY } : this.game.grid.toPixel(unit);
       const bobY = (anim && anim.bobY) || 0;
-      const facing = (anim && anim.renderFacing !== undefined) ? anim.renderFacing : unit.facing;
+      const facing = (anim && anim.renderFacing !== undefined) ? anim.renderFacing : (unit.facing || 0);
       const color = this.game.factions[unit.faction].color;
+      const isSelected = this.game.selected === unit;
+      const metrics = this.getUnitDrawMetrics(unit, size);
 
-      if (anim && this.game.animConfig?.shadow) {
+      // 1. Faction base disc & ring drawn UNDER the sprite so it never cuts across the hull or barrel
+      const ringRadius = Math.max(14, size * 0.62);
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(center.x, center.y, ringRadius, 0, Math.PI * 2);
+      ctx.fillStyle = isSelected ? 'rgba(255, 255, 255, 0.14)' : 'rgba(14, 18, 14, 0.34)';
+      ctx.fill();
+      ctx.strokeStyle = isSelected ? '#ffffff' : color;
+      ctx.lineWidth = isSelected ? Math.max(2.2, size * 0.09) : Math.max(1.4, size * 0.055);
+      ctx.stroke();
+      ctx.restore();
+
+      // 2. Soft ground contact shadow oriented with hull
+      if (this.game.animConfig?.shadow !== false) {
         ctx.save();
+        ctx.translate(center.x, center.y + size * 0.12);
+        if (unit.rotateSprite !== false) {
+          const shadowAngle = Math.cos(facing) >= -0.01 ? facing : (facing - Math.PI);
+          ctx.rotate(shadowAngle);
+        }
         ctx.beginPath();
-        ctx.ellipse(center.x, center.y + 14, 28, 12, 0, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.28)';
+        ctx.ellipse(0, 0, metrics.drawW * 0.36, metrics.visibleHullH * 0.45, 0, 0, Math.PI * 2);
+        ctx.fillStyle = anim ? 'rgba(0, 0, 0, 0.32)' : 'rgba(0, 0, 0, 0.22)';
         ctx.fill();
         ctx.restore();
       }
 
+      // 3. Aspect-ratio-true, hull-centered, right-side-up unit sprite
       ctx.save();
       ctx.translate(center.x, center.y + bobY);
-      // Vehicle source images point left (PI radians). Rotate that native
-      // heading to the unit's persistent world-space facing direction.
-      if (unit.rotateSprite !== false) ctx.rotate(facing - Math.PI);
-      this.drawImage(`unit:${unit.image}`, -43, -25, 86, 50, '#333');
-      ctx.restore();
-      ctx.beginPath();
-      ctx.arc(center.x, center.y, 34, 0, Math.PI * 2);
-      ctx.strokeStyle = this.game.selected === unit ? '#fff' : color;
-      ctx.lineWidth = this.game.selected === unit ? 4 : 2;
-      ctx.stroke();
-      ctx.fillStyle = '#111b';
-      ctx.fillRect(center.x - 35, center.y + 29, 70, 16);
-      ctx.fillStyle = color;
-      ctx.font = 'bold 10px ui-monospace';
-      ctx.textAlign = 'center';
-      ctx.fillText(unit.id, center.x, center.y + 40);
-      ctx.fillStyle = '#25251d';
-      ctx.fillRect(center.x - 28, center.y - 34, 56, 5);
-      ctx.fillStyle = unit.health / unit.maxHealth > 0.4 ? '#72b65d' : '#d95f43';
-      ctx.fillRect(center.x - 28, center.y - 34, 56 * unit.health / unit.maxHealth, 5);
+      ctx.imageSmoothingEnabled = true;
+      if ('imageSmoothingQuality' in ctx) ctx.imageSmoothingQuality = 'high';
 
-      // Subsystem and tactical status badges
-      let badgeY = center.y + 49;
+      if (unit.rotateSprite !== false) {
+        // Vehicle source images point left (PI radians).
+        // Mirror horizontally when facing right/east so turret hatches, markings, and
+        // shadows remain right-side up instead of flipping upside-down by 180 degrees.
+        if (Math.cos(facing) >= -0.01) {
+          ctx.rotate(facing);
+          ctx.scale(-1, 1);
+        } else {
+          ctx.rotate(facing - Math.PI);
+        }
+      }
+
+      const drawX = -metrics.drawW * (0.5 + metrics.centerShiftX);
+      const drawY = -metrics.drawH * 0.5;
+      this.drawImage(metrics.assetId, drawX, drawY, metrics.drawW, metrics.drawH, '#333');
+      ctx.restore();
+
+      // 4. Health bar scaled to hex size (top of hex)
+      const barW = Math.round(size * 1.08);
+      const barH = Math.max(3, Math.round(size * 0.12));
+      const barX = center.x - barW / 2;
+      const barY = center.y - Math.round(size * 0.72);
+      const healthRatio = Math.max(0, Math.min(1, unit.health / unit.maxHealth));
+      ctx.fillStyle = 'rgba(20, 22, 18, 0.85)';
+      ctx.fillRect(barX - 1, barY - 1, barW + 2, barH + 2);
+      ctx.fillStyle = healthRatio > 0.4 ? '#72b65d' : '#d95f43';
+      ctx.fillRect(barX, barY, barW * healthRatio, barH);
+
+      // 5. Compact unit ID tag (bottom of hex, stays inside hex bounds)
+      const labelFontPx = Math.max(8, Math.round(size * 0.27));
+      ctx.font = `bold ${labelFontPx}px ui-monospace`;
+      ctx.textAlign = 'center';
+      const labelW = Math.max(Math.round(size * 1.15), Math.ceil(ctx.measureText(unit.id).width) + 8);
+      const labelH = labelFontPx + 4;
+      const labelY = center.y + Math.round(size * 0.44);
+      ctx.fillStyle = 'rgba(15, 18, 22, 0.82)';
+      ctx.fillRect(center.x - labelW / 2, labelY, labelW, labelH);
+      ctx.fillStyle = isSelected ? '#ffffff' : color;
+      ctx.fillText(unit.id, center.x, labelY + labelFontPx + 0.5);
+
+      // 6. Subsystem and tactical status badges (compact, tucked right under ID tag)
+      let badgeY = labelY + labelH + 1;
+      const badgeFontPx = Math.max(7, Math.round(size * 0.23));
+      const badgeH = badgeFontPx + 3;
       if (unit.subsystems) {
         const badges = [];
         if (unit.subsystems.tracks === 'mobility_kill') badges.push({ text: 'MOB', color: '#ef4444' });
@@ -596,42 +688,41 @@
         if (!this.game.isInCommand(unit)) badges.push({ text: '!C2', color: '#f97316' });
 
         if (badges.length) {
-          const totalW = badges.length * 28;
+          const badgeW = Math.max(18, Math.round(size * 0.68));
+          const gap = 2;
+          const totalW = badges.length * badgeW + (badges.length - 1) * gap;
           let bx = center.x - totalW / 2;
-          ctx.font = 'bold 9px ui-monospace';
+          ctx.font = `bold ${badgeFontPx}px ui-monospace`;
           for (const b of badges) {
-            ctx.fillStyle = '#0f172a';
-            ctx.fillRect(bx, badgeY, 26, 12);
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+            ctx.fillRect(bx, badgeY, badgeW, badgeH);
             ctx.fillStyle = b.color;
-            ctx.fillText(b.text, bx + 13, badgeY + 9);
-            bx += 28;
+            ctx.fillText(b.text, bx + badgeW / 2, badgeY + badgeFontPx + 0.5);
+            bx += badgeW + gap;
           }
         }
       } else if (unit.unitClass === 'infantry') {
         const badges = [];
-        if (unit.suppression >= 0.7) badges.push({ text: 'PINNED', color: '#ef4444' });
-        else if (unit.suppression >= 0.35) badges.push({ text: 'SUPPR', color: '#f59e0b' });
+        if (unit.suppression >= 0.7) badges.push({ text: 'PIN', color: '#ef4444' });
+        else if (unit.suppression >= 0.35) badges.push({ text: 'SUP', color: '#f59e0b' });
         if (!this.game.isInCommand(unit)) badges.push({ text: '!C2', color: '#f97316' });
 
         if (unit.soldiers !== null && unit.soldiers !== undefined) {
-          ctx.fillStyle = '#0f172a';
-          ctx.fillRect(center.x - 28, badgeY, 56, 12);
-          ctx.fillStyle = '#e2e8f0';
-          ctx.font = 'bold 9px ui-monospace';
-          ctx.fillText(`${unit.soldiers}/${unit.maxSoldiers} SOL`, center.x, badgeY + 9);
-          badgeY += 14;
+          badges.unshift({ text: `${unit.soldiers}/${unit.maxSoldiers}`, color: '#e2e8f0' });
         }
 
         if (badges.length) {
-          const totalW = badges.length * 36;
+          const badgeW = Math.max(20, Math.round(size * 0.72));
+          const gap = 2;
+          const totalW = badges.length * badgeW + (badges.length - 1) * gap;
           let bx = center.x - totalW / 2;
-          ctx.font = 'bold 8px ui-monospace';
+          ctx.font = `bold ${badgeFontPx}px ui-monospace`;
           for (const b of badges) {
-            ctx.fillStyle = '#0f172a';
-            ctx.fillRect(bx, badgeY, 34, 12);
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+            ctx.fillRect(bx, badgeY, badgeW, badgeH);
             ctx.fillStyle = b.color;
-            ctx.fillText(b.text, bx + 17, badgeY + 9);
-            bx += 36;
+            ctx.fillText(b.text, bx + badgeW / 2, badgeY + badgeFontPx + 0.5);
+            bx += badgeW + gap;
           }
         }
       }
@@ -640,14 +731,15 @@
     drawTargets() {
       const selected = this.game.selected;
       if (!selected || selected.hasFired || (selected.weapon.stationaryOnly && selected.hasMoved)) return;
+      const targetRadius = Math.max(18, this.game.grid.size * 0.74);
       this.game.attackableUnits(selected).forEach(unit => {
         const anim = unit.animState;
         const center = anim ? { x: anim.renderX, y: anim.renderY } : this.game.grid.toPixel(unit);
         this.context.beginPath();
-        this.context.arc(center.x, center.y, 41, 0, Math.PI * 2);
+        this.context.arc(center.x, center.y, targetRadius, 0, Math.PI * 2);
         this.context.strokeStyle = '#ff543f';
-        this.context.setLineDash([6, 5]);
-        this.context.lineWidth = 3;
+        this.context.setLineDash([5, 4]);
+        this.context.lineWidth = Math.max(2, this.game.grid.size * 0.07);
         this.context.stroke();
         this.context.setLineDash([]);
       });
@@ -655,10 +747,11 @@
 
     drawImpacts() {
       const now = nowTime();
+      const hexScale = this.game.grid.size / 54;
       this.game.impacts.forEach(impact => {
         const center = this.game.grid.toPixel(impact);
         const progress = (now - impact.startedAt) / this.game.impactDuration;
-        const size = 72 + progress * 38;
+        const size = (72 + progress * 38) * hexScale;
         this.context.save();
         this.context.globalAlpha = Math.min(1, (1 - progress) * 1.8);
         this.drawImage('explosion', center.x - size / 2, center.y - size / 2, size, size);
@@ -1384,18 +1477,19 @@
     spawnDust(x, y, facing) {
       if (!this.particlePool) return;
       const rearAngle = facing + Math.PI;
+      const hexScale = (this.grid?.size || 30) / 54;
       for (let i = 0; i < 2; i++) {
         const p = this.particlePool.find(item => !item.active);
         if (!p) break;
         const angle = rearAngle + (Math.random() - 0.5) * 0.8;
-        const speed = 0.3 + Math.random() * 0.5;
+        const speed = (0.3 + Math.random() * 0.5) * hexScale;
         p.active = true;
         p.type = 'dust';
-        p.x = x + Math.cos(rearAngle) * 16 + (Math.random() - 0.5) * 8;
-        p.y = y + Math.sin(rearAngle) * 8 + (Math.random() - 0.5) * 6;
+        p.x = x + Math.cos(rearAngle) * (16 * hexScale) + (Math.random() - 0.5) * (8 * hexScale);
+        p.y = y + Math.sin(rearAngle) * (8 * hexScale) + (Math.random() - 0.5) * (6 * hexScale);
         p.vx = Math.cos(angle) * speed;
         p.vy = Math.sin(angle) * speed;
-        p.size = 5 + Math.random() * 5;
+        p.size = (5 + Math.random() * 5) * hexScale;
         p.alpha = 0.45;
         p.maxLife = 320;
         p.life = 0;
@@ -1935,15 +2029,16 @@
       const speedScale = this.tracerConfig.speedScale || 1.0;
       const baseDuration = (profile?.duration || 200) / speedScale;
       const facing = attacker.facing !== undefined ? attacker.facing : this.directionAngle(attacker, target);
+      const hexScale = (this.grid?.size || 30) / 54;
 
-      const startX = attackerPos.x + Math.cos(facing) * 24;
-      const startY = attackerPos.y + Math.sin(facing) * 14;
+      const startX = attackerPos.x + Math.cos(facing) * (24 * hexScale);
+      const startY = attackerPos.y + Math.sin(facing) * (14 * hexScale);
 
       let targetX = targetPos.x;
       let targetY = targetPos.y;
       if (!outcome.hit) {
         const missAngle = facing + (Math.random() - 0.5) * 0.45;
-        const missDist = 38 + Math.random() * 25;
+        const missDist = (38 + Math.random() * 25) * hexScale;
         targetX += Math.cos(missAngle) * missDist;
         targetY += Math.sin(missAngle) * missDist;
       }
