@@ -16,7 +16,7 @@
     kicker: 'The western approaches to Ahvaz',
     turnSeconds: 30,
     turnLimit: 18,
-    map: { columns:68, rows:38, hexSize:30, metersPerHex:100, width:3700, height:1850 },
+    map: { columns:68, rows:38, hexSize:30, metersPerHex:50, width:3700, height:1850 },
 
     environment: {
       visibilityMeters:3500,
@@ -290,7 +290,7 @@
       }
     },
 
-    missionHtml:'Scale: 1 counter = 1 individual vehicle or infantry squad/team. 1 hex = 100 m (Grid: 6.8 × 3.8 km).<br><br><b>USA:</b> Breach the eastern defensive line (Column 60+). At 50% aggregate starting strength, the spearhead withdraws. Apache CAS arrives on turn 4, subject to coalition air defenses.<br><br><b>Alliance:</b> Prevent a breach and reduce the U.S. spearhead to half strength.',
+    missionHtml:'Scale: 1 counter = 1 individual vehicle or infantry squad/team. 1 hex = 50 m (Grid: 3.4 × 1.9 km).<br><br><b>USA:</b> Breach the eastern defensive line (Column 60+). At 50% aggregate starting strength, the spearhead withdraws. Apache CAS arrives on turn 4, subject to coalition air defenses.<br><br><b>Alliance:</b> Prevent a breach and reduce the U.S. spearhead to half strength.',
     openingLog:['Missile impacts walk across the Ahvaz highway—but the defense remains intact.','Unexpected contact: Chinese armor and Iranian prepared positions ahead.','U.S. cohesion is fragile. A 50% strength loss will force withdrawal.'],
 
     determineWinner(game) {

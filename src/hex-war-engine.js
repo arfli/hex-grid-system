@@ -508,7 +508,7 @@
       if (!selected || selected.health <= 0) return;
       const ctx = this.context;
       const pos = this.game.getUnitRenderPosition(selected);
-      const hexMeters = this.game.scenario.map.metersPerHex || 100;
+      const hexMeters = this.game.scenario.map.metersPerHex || 50;
       const hexSize = this.game.grid.size;
       const pixelPerMeter = (hexSize * Math.sqrt(3)) / hexMeters;
 

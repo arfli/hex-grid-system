@@ -95,7 +95,8 @@ This document catalogs all unfinished features, placeholders, planned architectu
 
 ### 4.3 Scenario Rescaling & Map Realism
 - [x] **Rescale 'Bite the Dust' Scenario to 1:1 Scale Representation**:
-  - Expanded map grid from 52×32 (2.8×1.5 km) to **68×38 hexes** ($6.8 \times 3.8\text{ km}$ at 100 m/hex, canvas $3700 \times 1850\text{ px}$) to accurately reflect the real-world western approaches to Ahvaz across the irrigation canal network.
+  - Rescaled tactical hex dimensions to **50 m per hex** (canonical *Steel Panthers* 50 yards/hex standard, $2,165\text{ m}^2$ per hex) to realistically reflect an individual vehicle maneuver box.
+  - Expanded map grid from 52×32 to **68×38 hexes** ($3.4 \times 1.9\text{ km}$ at 50 m/hex, canvas $3700 \times 1850\text{ px}$) to accurately reflect the real-world western approaches to Ahvaz across the irrigation canal network.
   - Scaled Order of Battle to authentic combined-arms task-force invasion echelons:
     - **U.S. Vanguard Spearhead (18 units)**: 8x M1A1 Abrams MBTs (Saber & Dagger platoons), 8x M2A2 Bradley IFVs (Ranger & Ghost platoons), 2x M2A2 Bradley Cavalry Scouts (Recon section).
     - **Coalition Defense (24 units)**: 8x ZTZ-99A MBTs (Dragon & Tiger platoons), 4x ZBD-04 IFVs (Jade platoon), 6x IRGC Dehlavieh ATGM teams in prepared trenches, 6x Volunteer infantry squads defending the urban perimeter.
@@ -106,11 +107,14 @@ This document catalogs all unfinished features, placeholders, planned architectu
 
 ## 5. Documentation Synchronization Debt
 
-- [ ] **Update `docs/DOCS.md`**:
-  - Section 2 still describes the legacy platoon scale (4 tanks per counter, 12 HP = 4 tanks) rather than individual vehicle and squad counters.
-  - Section 4 & 5 still describe flat armor values rather than directional aspect armor, subsystem critical damage, and infantry suppression meters.
-  - Add documentation for the newly added C2 network datalinks, OOB Tree inspector, and Force Builder tooling.
-- [ ] **Update `docs/SCENARIOS.md`**:
-  - Line 7 references the removed legacy file `scenarios/dust-line.js`.
-  - Update unit creation instructions to document `unitClass`, `armorAspect`, `subsystems`, `soldiers`, `company`, `platoon`, and `isLeader` fields.
+- [x] **Update `docs/DOCS.md`**:
+  - Rescaled ground truth from 100 m to **50 m per hex** ($2,165.06\text{ m}^2$) matching individual vehicle (~8–10 m length, 3.5 m width) maneuver, dispersion, and turret traverse footprint.
+  - Updated Section 2 to describe 1 counter = 1 individual vehicle or 1 infantry squad/team (*Steel Panthers* & *Armored Brigade* vision) instead of legacy platoon scale.
+  - Updated Section 4 to document offscreen terrain caching, contour bands, grid ticks, C2 datalinks, OOB Tree inspector, and Force Builder tooling.
+  - Updated Section 5 to document directional aspect armor (`front`, `side`, `rear`), subsystem critical hits (`tracks`, `engine`, `optics`, `gun`), infantry suppression meters (`SUPPR`, `PINNED`), and multi-ammo projectile tracers.
+  - Updated Section 6 scenario schema reference to 50 m/hex and modern unit fields.
+- [x] **Update `docs/SCENARIOS.md`**:
+  - Replaced legacy `scenarios/dust-line.js` reference with `scenarios/bite-the-dust.js`.
+  - Updated scale to 50 m per hex and individual vehicle/squad counters.
+  - Documented modern unit creation schema: `unitClass`, `armorAspect`, `subsystems`, `soldiers`, `company`, `platoon`, `role`, `isLeader`, `commandRadius`, and `weapons`.
 

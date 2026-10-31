@@ -9,9 +9,9 @@ A modular, scenario-driven tactical wargame engine built with vanilla ES6 JavaSc
 ### Core Principles
 - **Scenario-Driven Architecture**: Generic game rules, mathematical models, AI behaviors, and rendering logic live in the core engine (`src/hex-war-engine.js`), while all battle parameters, rosters, terrain layouts, and win conditions are defined in scenario definitions (`scenarios/*.js`).
 - **Standard Military Ground Scale**: 
-  - **1 Hex = 100 meters** center-to-center ground distance (configurable via `map.metersPerHex`).
-  - Unit weapons use real-world ballistic ranges (e.g., 3,000 m for tank main guns, 3,750 m for ATGMs).
-  - One unit counter represents an individual vehicle or fortified squad/team position.
+  - **1 Hex = 50 meters** center-to-center ground distance (configurable via `map.metersPerHex`).
+  - Unit weapons use real-world ballistic ranges (e.g., 3,000 m for tank main guns, 3,750 m for ATGMs, 600 m for squad small arms).
+  - One unit counter represents an **individual vehicle** (1 MBT / 1 IFV) or an **individual infantry squad / weapon team** (1 rifle squad / 1 ATGM crew), eliminating artificial death-stacks and preserving authentic tactical dispersion.
   - One turn represents approximately 30 seconds of tactical combat.
 - **Zero External Dependencies**: Pure vanilla JavaScript, standard Web APIs (2D Canvas, Pointer Events, DOM), and zero build step or npm bundle requirement.
 
@@ -21,61 +21,73 @@ A modular, scenario-driven tactical wargame engine built with vanilla ES6 JavaSc
 
 ### 2.1 What 1 Hex Represents (Geometry & Square Meters)
 
-The engine models pointy-topped regular hexagons configured through `map.metersPerHex` (default: **100 meters**).
+The engine models pointy-topped regular hexagons configured through `map.metersPerHex` (default: **50 meters**).
 
 In hexagonal wargames and within `HexGrid.distance(a, b)`:
-- **Center-to-Center Distance**: Moving between two adjacent hex centers equals exactly **$100\text{ meters}$**.
-- **Flat-to-Flat Width ($W$)**: $100\text{ meters}$ (the diameter between opposite parallel edges).
-- **Apothem / Inradius ($r$)**: Distance from the center to any edge midpoint is $r = \frac{W}{2} = 50\text{ meters}$.
+- **Center-to-Center Distance**: Moving between two adjacent hex centers equals exactly **$50\text{ meters}$**.
+- **Flat-to-Flat Width ($W$)**: $50\text{ meters}$ (the diameter between opposite parallel edges).
+- **Apothem / Inradius ($r$)**: Distance from the center to any edge midpoint is $r = \frac{W}{2} = 25\text{ meters}$.
 - **Side Length ($s$) & Circumradius ($R$)**:
-  $$R = s = \frac{W}{\sqrt{3}} = \frac{100}{\sqrt{3}} \approx 57.735\text{ meters}$$
-- **Vertex-to-Vertex Diameter ($2R$)**: $\approx 115.47\text{ meters}$.
+  $$R = s = \frac{W}{\sqrt{3}} = \frac{50}{\sqrt{3}} \approx 28.868\text{ meters}$$
+- **Vertex-to-Vertex Diameter ($2R$)**: $\approx 57.735\text{ meters}$.
 
 #### Exact Area Calculation:
 The ground footprint of a single regular hex is:
-$$\text{Area} = 2\sqrt{3} \times r^2 = 2\sqrt{3} \times (50\text{ m})^2 = 5000\sqrt{3} \approx \mathbf{8{,}660.25\text{ m}^2}$$
+$$\text{Area} = 2\sqrt{3} \times r^2 = 2\sqrt{3} \times (25\text{ m})^2 = 1250\sqrt{3} \approx \mathbf{2{,}165.06\text{ m}^2}$$
 
 In practical units:
-- **$\approx 8{,}660\text{ square meters}$**
-- **$\approx 0.866\text{ hectares}$**
-- **$\approx 2.14\text{ acres}$**
-- *(By comparison, a standard FIFA soccer pitch is $\sim 7{,}140\text{ m}^2$; one hex is approximately $1.21$ soccer pitches in area).*
+- **$\approx 2{,}165\text{ square meters}$**
+- **$\approx 0.217\text{ hectares}$**
+- **$\approx 0.535\text{ acres}$**
+
+#### Tactical Ground Truth: Why 50m Fits 1 Armored Vehicle:
+- A modern armored combat vehicle (e.g. M1A1 Abrams MBT: $\sim 9.8\text{ m}$ length with gun forward, $3.66\text{ m}$ hull width; ZTZ-99A: $\sim 10\text{ m}$ length, $3.5\text{ m}$ width) occupies a physical vehicle footprint of approximately $35\text{ m}^2$.
+- In tactical doctrine (*Steel Panthers*, *Armored Brigade*), an armored vehicle does not operate in isolation on a point; it requires:
+  1. **Immediate Maneuver Box**: Cross-country maneuvering, neutral hull turning, and reversing into cover.
+  2. **Turret Traverse Arc & Stand-off**: 360° main gun traverse radius without clipping vegetation, structures, or friendly vehicles.
+  3. **Hull-Down Berm Clearance & Defilade**: Concealment behind terrain crests, road embankments, and earth revetments.
+  4. **Standoff & Spacing**: Safety radius from secondary blast, spall, and ammunition cook-off.
+- At $100\text{ m}$ per hex ($8,660\text{ m}^2$ or nearly $1\text{ hectare}$), a single vehicle occupying an entire hex was unrealistically cavernous. A **$50\text{ m}$ hex ($2,165\text{ m}^2$)** provides the exact operational maneuver envelope for a single armored vehicle or a dispersed 9-soldier infantry squad.
 
 #### Total Battlefield Dimensions:
-In the standard scenario (`columns: 52, rows: 32`):
-- **Map Width**: $52 \times 100\text{ m} = \mathbf{5.2\text{ km}}$
-- **Map Height**: $32 \times 100\text{ m} = \mathbf{3.2\text{ km}}$
-- **Total Engagement Envelope**: $5.2\text{ km} \times 3.2\text{ km} = \mathbf{16.64\text{ km}^2}$ ($1{,}664\text{ hectares}$ across $1{,}664$ hexes).
+In the standard scenario (`columns: 68, rows: 38` at $50\text{ m/hex}$):
+- **Map Width**: $68 \times 50\text{ m} = \mathbf{3.4\text{ km}}$
+- **Map Height**: $38 \times 50\text{ m} = \mathbf{1.9\text{ km}}$
+- **Total Engagement Envelope**: $3.4\text{ km} \times 1.9\text{ km} = \mathbf{6.46\text{ km}^2}$ ($646\text{ hectares}$ across 2,584 hexes).
 
 ---
 
-### 2.2 What 1 Unit Counter Represents (Tactical Echelon: Platoon Scale)
+### 2.2 What 1 Unit Counter Represents (Tactical Scale: 1 Counter = 1 Vehicle or 1 Squad)
 
-Each unit counter on a hex represents **1 Platoon** (or heavy-weapons section / infantry defensive platoon):
+Following the *Steel Panthers* and *Armored Brigade* combined-arms design model, each unit counter represents **1 Individual Vehicle** or **1 Infantry Squad / Weapon Team**:
 
-| Counter Type | Unit Echelon | Platoon Composition | Example in Code | Crew / Manpower |
+| Counter Type | Unit Scale | Tactical Role | Example in Code | Crew / Manpower |
 | :--- | :--- | :--- | :--- | :--- |
-| **Main Battle Tank (MBT)** | **Armor Platoon** | 4 Tanks (U.S.) / 3–4 Tanks (Coalition) | `SABER-1` (1st Plt, Saber Co), `DRAGON-1` | 12–16 crewmen |
-| **Infantry Fighting Vehicle (IFV)** | **Mechanized Infantry Platoon** | 4 Bradleys / ZBD-04s + mechanized infantry dismounts | `RANGER-1` (1st Plt, Ranger Co), `JADE-1` | 12 vehicle crew + ~24–30 dismounted riflemen |
-| **Fortified Infantry** | **Anti-Tank Platoon / Battery** | 3–4 Prepared ATGM launcher emplacements | `IRGC-1` (`IRGC Fortified ATGM Platoon`) | 12–20 specialized missile crewmen |
-| **Volunteer Infantry** | **Defensive Infantry Platoon** | 3–4 Rifle squads in trench/urban strongpoints | `VOL-1` (`Iranian Volunteer Platoon`) | 30–40 infantry fighters |
+| **Main Battle Tank (MBT)** | **1 Individual Tank** | Heavy breakthrough, direct kinetic/chemical fire | `SABER-1` (Plt Leader), `DRAGON-1` | 4 crewmen |
+| **Infantry Fighting Vehicle (IFV)** | **1 Individual IFV** | Troop transport, autocannon & ATGM fire | `RANGER-1` (Mech Leader), `JADE-1` | 3 crewmen (+ dismount section) |
+| **ATGM Team** | **1 Weapon Section / Team** | Fortified long-range guided missile defense | `IRGC-1` (Section Leader, Dehlavieh) | 4 crewmen |
+| **Volunteer Squad** | **1 Infantry Squad** | Close-range defense, urban & trench combat | `VOL-1` (Squad Leader), `VOL-2` | 9 soldiers |
 
-#### Why Platoon Scale Fits the Ground Geography:
-- **Platoon Frontage in Doctrine**: In modern mechanized warfare doctrine, an armored platoon deployed in combat line, wedge, or echelon covers a **$100\text{ m to }200\text{ m}$ frontage**. An $8{,}660\text{ m}^2$ ($100\text{ m}$ center-to-center) hex directly matches the operational footprint and maneuver box of a single platoon.
-- **Combat Strength & Health Points Mapping**:
-  - The health bar represents the **platoon's combat strength and operational vehicles**:
-    - **M1A1 Abrams Platoon (12 HP)**: Corresponds to 4 tanks with 3 hit points each (12 HP = 4 tanks operational, 9 HP = 3 tanks, 6 HP = 2 tanks, 3 HP = 1 tank surviving).
-    - **Bradley Mech Platoon (7 HP)**: Corresponds to 3–4 IFVs and organic infantry teams.
-  - When a platoon takes damage, it represents cumulative vehicle losses, damaged tracks/optics, and crew casualties.
-- **Player Command Scope (Force Echelon)**:
-  - The player commands a **Combined-Arms Company Combat Team / Battalion Vanguard** (e.g., U.S. force: 4 Tank Platoons [16 Abrams] + 3 Mechanized Platoons [12 Bradleys] = **28 combat vehicles**).
-  - The operational narrative sets this reinforced company as the lead spearhead of an advancing **Armored Regiment** attacking toward the outskirts of Ahvaz.
-- **Platoon Callsigns**:
-  - `SABER-1` $\rightarrow$ 1st Platoon, Saber Company (Abrams)
-  - `SABER-2` $\rightarrow$ 2nd Platoon, Saber Company (Abrams)
-  - `RANGER-1` $\rightarrow$ 1st Platoon, Ranger Company (Bradleys)
-  - `DRAGON-1` $\rightarrow$ 1st Platoon, Dragon Company (Type 99 MBTs)
-  - `JADE-1` $\rightarrow$ 1st Platoon, Jade Company (ZBD-04 IFVs)
+#### Tactical Architecture & Mechanics:
+- **Directional Aspect Armor**: Each vehicle has explicit RHAe armor ratings across four headings: `front`, `side`, `rear`, and `top`. Incoming attacks dynamically calculate the relative impact angle to test against the corresponding armor aspect.
+- **Granular Subsystem Damage**: Penetrating and high-explosive hits can critically damage individual subsystems:
+  - `tracks`: Immobilizes the vehicle (`movement = 0`).
+  - `engine`: Cuts vehicle mobility in half.
+  - `optics`: Reduces targeting accuracy by 25%.
+  - `gun`: Traverses jammed or barrel compromised; reduces accuracy by 35%.
+- **Infantry Soldier Tracking & Suppression**:
+  - Infantry squads track living soldier counts (e.g. 9 soldiers for `VOL`, 4 for `IRGC`).
+  - Incoming fire accumulates suppression on a 0.0–1.0 scale:
+    - `Suppression > 0.6` $\rightarrow$ **SUPPRESSED** (degraded accuracy, cannot advance).
+    - `Suppression > 0.85` $\rightarrow$ **PINNED** (completely immobilized, zero offensive fire).
+- **Command & Control (C2) Datalink Network**:
+  - Platoon and section leaders (`isLeader: true`) project an authentic `commandRadius` (6–8 hexes).
+  - Wingmen and subordinate squads maintain visual C2 datalink lines with their leader.
+  - Units outside command radius suffer morale degradation, slower rally from suppression, and a 10% accuracy penalty.
+- **Player Command Scope (Task Force Echelon)**:
+  - The player commands a **Combined-Arms Task Force Vanguard**:
+    - **U.S. Spearhead (18 counters)**: 8× M1A1 Abrams MBTs (Saber & Dagger platoons), 8× M2A2 Bradleys (Ranger & Ghost platoons), 2× Bradley Scouts.
+    - **Coalition Defense (24 counters)**: 8× ZTZ-99A MBTs (Dragon & Tiger platoons), 4× ZBD-04 IFVs (Jade platoon), 6× IRGC ATGM teams, 6× Volunteer rifle squads.
 
 ---
 
@@ -83,19 +95,24 @@ Each unit counter on a hex represents **1 Platoon** (or heavy-weapons section / 
 
 ```
 hex-grid-system/
-├── index.html               # Main entrypoint: UI layout, canvas, dialogs, and script tags
-├── styles.css               # Styling for game dashboard, military terminal styling, and dialogs
+├── index.html               # Main entrypoint: UI layout, canvas, modal dialogs, and HUD
+├── styles.css               # Styling for tactical terminal HUD, OOB inspector, and dialogs
 ├── src/
-│   ├── hex-war-engine.js    # Core wargame engine, math, AI, and renderer classes
+│   ├── weapons-data.js      # AMMO_TYPES and WEAPONS ballistic tables and tracer styles
+│   ├── hex-war-engine.js    # Core wargame engine: geometry, AI, OOB, subsystems, renderer
 │   └── main.js              # Application bootstrapper, query param routing, scenario mounting
 ├── scenarios/
-│   └── bite-the-dust.js     # Scenario: Battle on western approaches to Ahvaz
+│   └── bite-the-dust.js     # Scenario: Battle on western approaches to Ahvaz (68x38 grid, 50m/hex)
+├── svg/                     # Original top-down tactical unit sprites (US infantry single/squad/snow)
 ├── docs/
 │   ├── DOCS.md              # Core system and architecture documentation (this file)
-│   └── SCENARIOS.md         # Guide for authoring custom scenarios
+│   ├── SCENARIOS.md         # Guide for authoring custom scenarios
+│   ├── unit-weapons-audit.md # Weapons loadout audit and ballistic reference
+│   └── tactical-overhaul-report.md # Report on individual vehicle & subsystem tactical overhaul
+├── TODO.md                  # Master project roadmap and backlog
 └── assets/
     ├── imgs/                # Vehicle sprites, background textures, effects, explosions
-    ├── svg/                 # Terrain overlay SVGs and infantry counter icons
+    ├── svg/                 # Terrain overlay SVGs and legacy counter icons
     └── audio/               # SFX audio tracks (engines, weapons fire)
 ```
 
@@ -103,38 +120,9 @@ hex-grid-system/
 
 ## 4. Architecture & Engine Components
 
-The engine is encapsulated under the global namespace `window.HexWar` and composed of six core classes:
+The engine is encapsulated under the global namespace `window.HexWar` and composed of modular, decoupled classes:
 
-```
-                      +-------------------+
-                      |      main.js      |
-                      +---------+---------+
-                                |
-                                v
-                      +-------------------+
-                      |    HexWarGame     | <----------------+
-                      +----+----+----+----+                  |
-                           |    |    |                       |
-            +--------------+    |    +-------------+         |
-            v                   v                  v         |
-     +-------------+    +---------------+   +------------+   |
-     |   HexGrid   |    | Battlefield-  |   | TacticalAI |   |
-     |  (Geometry) |    |   Renderer    |   | (Decision) |   |
-     +-------------+    +-------+-------+   +------------+   |
-                                |                            |
-                                v                            |
-                        +---------------+                    |
-                        |  MapViewport  |                    |
-                        |  (Pan / Zoom) |                    |
-                        +---------------+                    |
-                                                             |
-     +-------------+    +---------------+                    |
-     |   GameUI    |    |  ModalDialog  |                    |
-     |  (DOM Sync) |    |  StoryIntro   | -------------------+
-     +-------------+    +---------------+
-```
-
-### 3.1 `HexGrid`
+### 4.1 `HexGrid`
 Handles axial coordinate mathematics, distance calculations, neighbor lookups, and screen-space conversions:
 - **Coordinate System**: Pointy-topped axial coordinates $(q, r)$, derived from rectangular grid columns and rows:
   $$q = \text{column} - \lfloor \text{row} / 2 \rfloor, \quad r = \text{row}$$
@@ -143,47 +131,42 @@ Handles axial coordinate mathematics, distance calculations, neighbor lookups, a
 - **Pixel Projection**:
   $$x = \text{origin.x} + \text{hexSize} \times \sqrt{3} \times (q + r / 2)$$
   $$y = \text{origin.y} + \text{hexSize} \times 1.5 \times r$$
-- **Closest Cell Lookup**: `closestCell(x, y)` calculates Euclidean distance from screen coordinates to cell centers to find the target hex.
+- **Closest Cell Lookup**: Converts screen coordinates $(x, y)$ to nearest axial hex center with closed-form bounding math.
 
-### 3.2 `AssetStore`
+### 4.2 `AssetStore`
 Asynchronously preloads image assets required by the scenario (`baseTerrain`, `explosion`, terrain decals, unit sprites, and air support models). Invokes an `onLoad` callback on completion of each asset to trigger canvas repaints.
 
-### 3.3 `BattlefieldRenderer`
-Renders all tactical elements to the HTML5 Canvas in layered order:
-1. **Board Hexes**: Base terrain image clipped to each hex polygon, overlaid with terrain decals (roads, canals, urban blocks, trenches, craters) and border strokes.
-2. **Movement Reachability**: Semi-transparent blue fill and highlighted border on reachable hexes for the currently selected unit.
-3. **Objectives**: Numbered diamond markers colored by faction ownership.
-4. **Units**: Directionally rotated vehicle/infantry sprites, faction affiliation rings, unit identifier badges, and two-tone health bars.
-5. **Target Indicators**: Pulsing dashed red circles around attackable enemy units within line-of-sight and weapon reach.
-6. **Explosions & Impact FX**: Animated frame-by-frame alpha fades and expansions for ballistic impacts.
-7. **Air Support Missions**: Animated low-altitude aircraft flybys with sinusoidal flight paths and shadow effects.
+### 4.3 `BattlefieldRenderer`
+Renders tactical elements to the HTML5 Canvas with modern Armored Brigade-style military cartography:
+1. **Offscreen Terrain Caching (`cachedTerrainCanvas`)**: Bakes static terrain textures, roads, canals, bridges, urban blocks, and trenches into an offscreen buffer at devicePixelRatio resolution once, blitting in a single `drawImage` call for sustained 60fps performance.
+2. **Topographic Elevation Contours**: Stylized concentric contour bands and military elevation badges indicating local terrain height.
+3. **Military Grid Reference System (MGRS) Ticks**: Edge grid coordinate indicators along board margins.
+4. **C2 Datalink Overlays**: Glowing tactical tether lines connecting subordinate vehicles and squads to their designated platoon leaders.
+5. **Dynamic Weapon Engagement Envelopes**: Dashed range rings illustrating primary gun reach and optimal engagement envelopes.
+6. **Tactical Counter Badges**: Subsystem damage indicators (`TRK`, `ENG`, `OPT`, `GUN`), infantry soldier headcount badges, and suppression tags (`PINNED`, `SUPPR`).
+7. **Ballistic Projectile & Tracer FX**: High-speed animated tracer streaks tailored per ammunition type (APFSDS, HEAT, ATGM, HE-FRAG, Autocannon, Machine Gun) with realistic muzzle flashes and impact smoke.
 
-### 3.4 `HexWarGame`
+### 4.4 `HexWarGame`
 The central state machine and coordinator:
 - Manages game state (`activeFaction`, `turn`, `selected`, `gameOver`, `livingUnits`).
-- Runs pathfinding and movement execution.
-- Evaluates combat line-of-sight, weapon range, ballistic accuracy, armor penetration, and damage calculations.
-- Coordinates turn progression, automated AI scheduling, and victory condition evaluations (`determineWinner()`).
+- Runs pathfinding and multi-step movement execution with easing and facing rotation.
+- Evaluates directional aspect armor, ballistic penetration, subsystem damage rolls, and suppression accumulation.
+- Coordinates turn progression, automated AI scheduling, C2 status evaluation, and victory checks (`determineWinner()`).
 
-### 3.5 `TacticalAI`
+### 4.5 `TacticalAI`
 Autonomous decision-making engine for computer-controlled factions:
 - **`defensive-fire`**: Identifies highest-threat, high-vulnerability targets within firing range and executes defensive fire while maintaining fortified positions.
 - **`breakthrough`**: Prioritizes attacking vulnerable targets, evaluates the optimal advance hex toward scenario objectives or target columns using Dijkstra movement maps, moves the unit, and conducts follow-up strikes if the unit's weapon allows firing on the move.
-- **Target Scoring Formula**:
-  $$\text{Score} = \text{Accuracy} \times \text{Vulnerability} + \left(1 - \frac{\text{target.health}}{\text{target.maxHealth}}\right) \times 2$$
-  where $\text{Vulnerability} = \max(1, \text{penetration} - \text{target.armor} + 3)$.
 
-### 3.6 `MapViewport`
+### 4.6 `MapViewport`
 Provides interactive navigation over large battlefield maps:
 - Smooth drag-and-drop panning with pointer capture.
 - Zoom slider and `Ctrl + Wheel` zooming centered on the mouse position.
 - "Fit Map" viewport calculation to frame the entire engagement area.
-- Click suppression guard (`suppressNextClick`) to differentiate between camera pans and unit selection clicks.
 
-### 3.7 `GameUI`, `StoryIntro`, & `ModalDialog`
-- **`GameUI`**: Binds the game state to DOM elements, updating the top banner, turn counters, detailed unit inspection panel (armor, movement, reach, weapon data, crew quality, morale), and the combat event log.
-- **`StoryIntro`**: Renders an immersive military CRT terminal briefing with animated typewriter character pauses (with reduced-motion accessibility support).
-- **`ModalDialog`**: Accessible modal overlay for pre-battle briefings, faction selection, and post-battle strategic aftermath reports.
+### 4.7 Tactical Modals (`OOB Tree` & `Force Builder`)
+- **OOB Tree Inspector (`btnOob`)**: Interactive hierarchical military tree modal visualizing Company $\rightarrow$ Platoon $\rightarrow$ Individual Vehicle / Squad status, leader tethers, and readiness.
+- **Force Builder (`btnForceBuilder`)**: In-engine tactical scenario draft tool for custom force ratios, unit rosters, and environmental parameters.
 
 ---
 
@@ -228,16 +211,40 @@ $$\text{Accuracy} = \text{base} \times \text{crewSkill} \times \text{morale}$$
 - **Defensive Cover**: Subtracted by $\text{terrain.defense} \times 0.10$ (e.g., Urban or Trench with +2 defense reduces hit chance by $20\%$).
 - Clamped between $5\%$ and $95\%$.
 
-#### 3. Armor Penetration Roll
+#### 3. Directional Aspect Armor Roll
+Incoming fire does not hit a generic armor rating. Instead, the engine dynamically calculates the projectile's relative impact angle $\theta$ against the target's current facing:
+$$\theta = \text{wrapToPi}(\text{atan2}(y_{\text{att}} - y_{\text{tgt}}, \, x_{\text{att}} - x_{\text{tgt}}) - \text{target.facing})$$
+$$\text{Aspect Hit} = \begin{cases} \mathbf{front} & \text{if } |\theta| \le 45^\circ \\ \mathbf{side} & \text{if } 45^\circ < |\theta| \le 135^\circ \\ \mathbf{rear} & \text{if } |\theta| > 135^\circ \end{cases}$$
+The effective armor rating is looked up from `target.armorAspect[aspect]` (e.g. M1A1: front 10, side 6, rear 4).
+
 If an attack hits ($\text{random}() \le \text{Accuracy}$):
-$$\text{margin} = \text{weapon.penetration} - \text{target.armor}$$
+$$\text{margin} = \text{weapon.penetration} - \text{effectiveArmor}$$
 $$\text{Penetration Chance} = \text{clamp}(0.20, \, 0.90, \, 0.55 + \text{margin} \times 0.12)$$
 
-#### 4. Damage Allocation
+#### 4. Damage Allocation & Subsystem Criticals
 - **Penetrating Hit**:
   $$\text{Damage} = \max(1, \, 3 + \text{margin} + \lfloor\text{random}() \times 3\rfloor)$$
-- **Non-Penetrating Hit (Armor Held)**: Deals exactly $1$ point of concussion / surface damage.
+  - **Vehicle Subsystem Rolls**: Full penetrations roll for critical component failures:
+    - `tracks` damaged: Vehicle completely immobilized (`movement = 0`).
+    - `engine` damaged: Mobility permanently reduced by $50\%$.
+    - `optics` damaged: Fire control degraded; targeting accuracy reduced by $25\%$.
+    - `gun` damaged: Traverse or breech jammed; targeting accuracy reduced by $35\%$.
+  - **Infantry Casualties & Suppression**:
+    - Reduces surviving soldier headcount (`target.soldiers`).
+    - Adds suppression points ($+0.35$ per penetrating hit, $+0.15$ on near-miss concussion).
+    - `Suppression > 0.60`: **SUPPRESSED** (accuracy degraded, cannot initiate advance).
+    - `Suppression > 0.85`: **PINNED** (completely disabled from movement or fire).
+- **Non-Penetrating Hit (Armor Held)**: Deals exactly $1$ point of concussion / spall damage.
 - **Miss**: $0$ damage.
+
+#### 5. Ballistic Projectile & Tracer FX
+Every attack dispatches an animated projectile tracer whose visual speed, color, geometry, and smoke trail depend on the ammunition type in `src/weapons-data.js`:
+- `APFSDS`: Hyper-velocity thin cyan/white kinetic dart with brief fading wake.
+- `HEAT` / `RPG`: High-speed bright amber streak with dense smoke particles.
+- `ATGM`: Slower rocket missile with exhaust puff particles and wire/guidance flare.
+- `HE_FRAG`: Heavy high-arc explosive shell with massive dirt/spall detonation.
+- `AUTOCANNON`: Rapid 4-shot pulse stream of glowing yellow/orange tracers.
+- `MG_BALL_TRACER`: Sustained 8-shot bullet stream with 1:4 tracer mix.
 
 ---
 
@@ -251,14 +258,14 @@ window.SCENARIOS.myScenario = {
   title: 'Scenario Title',
   kicker: 'Subtitle or Region',
   turnSeconds: 30,
-  turnLimit: 14,
+  turnLimit: 18,
   map: {
-    columns: 52,
-    rows: 32,
+    columns: 68,
+    rows: 38,
     hexSize: 30,          // Radius in pixels
-    metersPerHex: 100,    // Tactical ground scale
-    width: 2800,          // Canvas rendering width in px
-    height: 1500          // Canvas rendering height in px
+    metersPerHex: 50,     // 50 meters ground scale (canonical Steel Panthers scale)
+    width: 3700,          // Canvas rendering width in px
+    height: 1850          // Canvas rendering height in px
   },
   environment: {
     visibilityMeters: 3500,
@@ -276,10 +283,11 @@ window.SCENARIOS.myScenario = {
   airSupport: {
     id: 'apache-cas',
     faction: 'US',
-    turn: 3,
+    turn: 4,
     image: 'apache',
     durationMs: 6500,
-    strikes: 3,
+    weapons: ['hellfire_atgm', 'm230_30'],
+    strikes: 4,
     baseHitChance: 0.76,
     airDefenseModifier: 0.62,
     minimumDamage: 4,
@@ -287,28 +295,32 @@ window.SCENARIOS.myScenario = {
   },
   factions: {
     US: { name: 'U.S.', victoryName: 'USA', color: '#55aaff', turnMessage: '...' },
-    OPFOR: { name: 'Opposing Force', victoryName: 'OPFOR', color: '#d94b42', turnMessage: '...' }
+    COALITION: { name: 'Chinese–Iranian Alliance', victoryName: 'ALLIANCE', color: '#d94b42', turnMessage: '...' }
   },
-  turnOrder: ['US', 'OPFOR'],
+  turnOrder: ['US', 'COALITION'],
   ai: {
-    OPFOR: { strategy: 'defensive-fire' }
+    US: { strategy: 'breakthrough', goalColumn: 60 },
+    COALITION: { strategy: 'defensive-fire' }
   },
   terrainTypes: {
     urban: { label: 'Urban blocks', movementCost: 1.5, defense: 2 }
   },
   terrain: {
-    urban: [[43, 2], [43, 3], /* [q, r] axial coordinates */]
+    urban: [[56, 2], [56, 3], /* [q, r] axial coordinates */]
   },
   objectives: [
-    { name: 'Bridgehead', q: 26, r: 15 }
+    { name: 'Central Highway Junction', q: 52, r: 19 }
   ],
   unitTypes: {
     abrams: {
-      name: 'M1A1 Abrams',
+      name: 'M1A1 Abrams MBT',
+      unitClass: 'afv',
       image: 'abrams',
       health: 12,
       armor: 10,
+      armorAspect: { front: 10, side: 6, rear: 4, top: 3 },
       movement: 5,
+      weapons: ['m256_120', 'm240_coax'],
       weapon: {
         name: '120 mm M256',
         maxRangeMeters: 3000,
@@ -325,16 +337,27 @@ window.SCENARIOS.myScenario = {
       id: 'SABER-1',
       faction: 'US',
       type: 'abrams',
-      q: 4,
-      r: 7,
+      q: 0,
+      r: 8,
       crewSkill: 1.06,
-      morale: 0.84,
-      facing: 0
+      morale: 0.86,
+      facing: 0,
+      company: 'A Co, 1-64 AR',
+      platoon: '1st Platoon (Saber)',
+      role: 'Platoon Leader',
+      isLeader: true,
+      commandRadius: 7
     }
   ],
   intro: { title: '...', paragraphs: ['...'] },
-  briefing: { dateLine: '...', situation: '...', sides: { US: '...', OPFOR: '...' } },
+  briefing: { dateLine: '...', situation: '...', sides: { US: '...', COALITION: '...' } },
   outcomes: {
+    US: { headline: '...', next: '...', internationalReaction: '...' }
+  },
+  determineWinner(game) { /* returns faction id or null */ },
+  victoryMessage(winner) { /* returns summary string */ }
+};
+```
     US: { headline: '...', next: '...', internationalReaction: '...' }
   },
   determineWinner(game) { /* returns faction id or null */ },

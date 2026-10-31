@@ -40,11 +40,12 @@ This document captures the completed architectural transition away from legacy s
 
 ## 2. Scale & Ground Truth Architecture
 
-### 2.1 Spatial Scale: 100m Tactical Hexes
-- **Hex Diameter:** 100 m per hex.
+### 2.1 Spatial Scale: 50m Tactical Hexes
+- **Hex Diameter:** 50 m per hex (canonical Steel Panthers standard of ~50 yards / 50 meters).
 - **Vehicle Representation:** 1 counter = **1 individual vehicle** (e.g. single M1A1 Abrams MBT, single M2A2 Bradley IFV, single ZTZ-99A MBT).
 - **Infantry Representation:** 1 counter = **1 individual squad** (9 soldiers) or **1 specialized weapon team** (4 soldiers: IRGC ATGM team).
 - **Stacking Rule:** Maximum 1 vehicle or 1 infantry squad per hex, eliminating artificial death-stacks and preserving authentic military dispersion.
+- **Physical Area:** ~2,165 m² per hex ($0.217\text{ ha}$), providing realistic maneuver and dispersion clearance for an individual 8–10 m armored combat vehicle.
 
 ### 2.2 Temporal Scale: The Phased Turn Cycle
 - **Command & Datalink Evaluation:** Evaluates C2 command radius from platoon leaders to squad elements.
