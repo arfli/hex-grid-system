@@ -20,12 +20,12 @@
   // Prevents aspect-ratio squashing, normalizes hull height relative to hexSize,
   // and centers long-barreled tanks on their hull/turret rather than barrel tip.
   const UNIT_SPRITE_META = {
-    abrams:  { aspect: 512 / 231, hullHeightRatio: 0.74, activeYRatio: 0.835, centerShiftX: 0.094 },
-    type99:  { aspect: 533 / 177, hullHeightRatio: 0.72, activeYRatio: 1.000, centerShiftX: 0.086 },
-    bradley: { aspect: 245 / 119, hullHeightRatio: 0.66, activeYRatio: 0.950, centerShiftX: -0.006 },
-    zbd04:   { aspect: 403 / 177, hullHeightRatio: 0.66, activeYRatio: 0.983, centerShiftX: 0.007 },
-    irgc:       { aspect: 120 / 80, maxHexRatio: 1.05, centerShiftX: 0 },
-    volunteers: { aspect: 120 / 80, maxHexRatio: 1.05, centerShiftX: 0 }
+    abrams:  { aspect: 1024 / 462, hullHeightRatio: 0.82, activeYRatio: 0.835, centerShiftX: 0.094 },
+    type99:  { aspect: 1066 / 354, hullHeightRatio: 0.80, activeYRatio: 0.966, centerShiftX: 0.086 },
+    bradley: { aspect: 735 / 357,  hullHeightRatio: 0.74, activeYRatio: 0.950, centerShiftX: -0.006 },
+    zbd04:   { aspect: 806 / 354,  hullHeightRatio: 0.74, activeYRatio: 0.983, centerShiftX: 0.007 },
+    irgc:       { aspect: 120 / 80, maxHexRatio: 1.08, centerShiftX: 0 },
+    volunteers: { aspect: 120 / 80, maxHexRatio: 1.08, centerShiftX: 0 }
   };
 
   class HexGrid {
@@ -117,11 +117,13 @@
       this.game = game;
       this.cachedTerrainCanvas = null;
       this.terrainCacheDirty = true;
+      this.spriteMipCache = new Map();
       this.perfStats = null;
     }
 
     invalidateTerrainCache() {
       this.terrainCacheDirty = true;
+      if (this.spriteMipCache) this.spriteMipCache.clear();
     }
 
     createOffscreenCanvas(width, height) {
@@ -139,13 +141,49 @@
       return null;
     }
 
+    getCrispUnitImage(assetId, targetPhysicalW, targetPhysicalH) {
+      const image = this.game.assets.get(assetId);
+      if (!image?.complete || !image.naturalWidth || !image.naturalHeight) return null;
+      const srcW = image.naturalWidth;
+      const srcH = image.naturalHeight;
+      if (srcW <= targetPhysicalW * 1.85 || isHeadless) return image;
+
+      // Multi-step 0.5x halving mipmap prevents browser single-pass bilinear downsampling blur
+      const bucketW = Math.max(32, Math.round(targetPhysicalW * 1.35));
+      const cacheKey = `${assetId}@${bucketW}`;
+      if (this.spriteMipCache.has(cacheKey)) {
+        return this.spriteMipCache.get(cacheKey);
+      }
+
+      let curSource = image;
+      let curW = srcW;
+      let curH = srcH;
+
+      while (curW * 0.5 >= bucketW) {
+        const nextW = Math.max(1, Math.round(curW * 0.5));
+        const nextH = Math.max(1, Math.round(curH * 0.5));
+        const stepCanvas = this.createOffscreenCanvas(nextW, nextH);
+        const stepCtx = stepCanvas && typeof stepCanvas.getContext === 'function' ? stepCanvas.getContext('2d') : null;
+        if (!stepCtx || typeof stepCtx.drawImage !== 'function') return image;
+        stepCtx.imageSmoothingEnabled = true;
+        if ('imageSmoothingQuality' in stepCtx) stepCtx.imageSmoothingQuality = 'high';
+        stepCtx.drawImage(curSource, 0, 0, nextW, nextH);
+        curSource = stepCanvas;
+        curW = nextW;
+        curH = nextH;
+      }
+
+      this.spriteMipCache.set(cacheKey, curSource);
+      return curSource;
+    }
+
     bakeTerrain() {
       if (!this.canvas) {
         this.terrainCacheDirty = false;
         return;
       }
-      const w = this.canvas.width;
-      const h = this.canvas.height;
+      const w = this.game.logicalWidth || this.canvas.width;
+      const h = this.game.logicalHeight || this.canvas.height;
       if (!this.cachedTerrainCanvas || this.cachedTerrainCanvas.width !== w || this.cachedTerrainCanvas.height !== h) {
         this.cachedTerrainCanvas = this.createOffscreenCanvas(w, h);
       }
@@ -421,10 +459,17 @@
         this.bakeTerrain();
       }
 
-      this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+      const renderScale = this.game.renderScale || 1;
+      const logicalW = this.game.logicalWidth || this.canvas.width;
+      const logicalH = this.game.logicalHeight || this.canvas.height;
+
+      if (typeof this.context.setTransform === 'function') {
+        this.context.setTransform(renderScale, 0, 0, renderScale, 0, 0);
+      }
+      this.context.clearRect(0, 0, logicalW, logicalH);
 
       if (this.cachedTerrainCanvas) {
-        this.context.drawImage(this.cachedTerrainCanvas, 0, 0);
+        this.context.drawImage(this.cachedTerrainCanvas, 0, 0, logicalW, logicalH);
       } else {
         this.game.grid.cells.forEach(cell => this.bakeCell(cell, this.context));
       }
@@ -649,7 +694,13 @@
 
       const drawX = -metrics.drawW * (0.5 + metrics.centerShiftX);
       const drawY = -metrics.drawH * 0.5;
-      this.drawImage(metrics.assetId, drawX, drawY, metrics.drawW, metrics.drawH, '#333');
+      const renderScale = this.game.renderScale || 1;
+      const crispSource = this.getCrispUnitImage(metrics.assetId, metrics.drawW * renderScale, metrics.drawH * renderScale);
+      if (crispSource) {
+        ctx.drawImage(crispSource, drawX, drawY, metrics.drawW, metrics.drawH);
+      } else {
+        this.drawImage(metrics.assetId, drawX, drawY, metrics.drawW, metrics.drawH, '#333');
+      }
       ctx.restore();
 
       // 4. Health bar scaled to hex size (top of hex)
@@ -761,11 +812,12 @@
 
     drawAirMissions() {
       const now = nowTime();
+      const logicalW = this.game.logicalWidth || this.canvas.width;
       this.game.airMissions.forEach(mission => {
         const progress = Math.max(0, Math.min(1, (now - mission.startedAt) / mission.duration));
         const width = 270;
         const height = 214;
-        const x = -width + progress * (this.canvas.width + width * 2);
+        const x = -width + progress * (logicalW + width * 2);
         const y = mission.y + Math.sin(progress * Math.PI * 2) * 16;
         this.context.save();
         this.context.globalAlpha = Math.min(1, progress * 8, (1 - progress) * 8);
@@ -1119,8 +1171,21 @@
     }
 
     start() {
-      this.canvas.width = this.scenario.map.width;
-      this.canvas.height = this.scenario.map.height;
+      this.logicalWidth = this.scenario.map.width;
+      this.logicalHeight = this.scenario.map.height;
+      this.renderScale = isHeadless
+        ? 1
+        : Math.min(2.25, Math.max(2, (typeof window !== 'undefined' && window.devicePixelRatio) || 1));
+      if (this.canvas.dataset) {
+        this.canvas.dataset.logicalWidth = String(this.logicalWidth);
+        this.canvas.dataset.logicalHeight = String(this.logicalHeight);
+      }
+      this.canvas.width = Math.round(this.logicalWidth * this.renderScale);
+      this.canvas.height = Math.round(this.logicalHeight * this.renderScale);
+      if (this.canvas.style) {
+        this.canvas.style.width = `${this.logicalWidth}px`;
+        this.canvas.style.height = `${this.logicalHeight}px`;
+      }
       this.ui.initialize();
       this.invalidateTerrainCache();
       this.invalidateReachableCache();
@@ -1303,7 +1368,9 @@
       }
       if (this.gameOver || this.aiRunning || this.cinematicRunning || this.activeFaction !== this.playerFaction) return;
       const bounds = this.canvas.getBoundingClientRect();
-      const cell = this.grid.closestCell((event.clientX - bounds.left) * this.canvas.width / bounds.width, (event.clientY - bounds.top) * this.canvas.height / bounds.height);
+      const logicalW = this.logicalWidth || this.canvas.width;
+      const logicalH = this.logicalHeight || this.canvas.height;
+      const cell = this.grid.closestCell((event.clientX - bounds.left) * logicalW / bounds.width, (event.clientY - bounds.top) * logicalH / bounds.height);
       if (!cell) return;
       const clickedUnit = this.unitAt(cell);
       if (clickedUnit?.faction === this.activeFaction) return this.select(clickedUnit);
@@ -2596,11 +2663,13 @@
 
     setZoom(scale) {
       const oldScale = this.scale;
+      const baseW = Number(this.canvas.dataset?.logicalWidth) || this.canvas.width;
+      const baseH = Number(this.canvas.dataset?.logicalHeight) || this.canvas.height;
       const contentCenterX = (this.viewport.scrollLeft + this.viewport.clientWidth / 2) / oldScale;
       const contentCenterY = (this.viewport.scrollTop + this.viewport.clientHeight / 2) / oldScale;
-      this.scale = Math.max(0.35, Math.min(1.4, scale));
-      this.canvas.style.width = `${this.canvas.width * this.scale}px`;
-      this.canvas.style.height = `${this.canvas.height * this.scale}px`;
+      this.scale = Math.max(0.35, Math.min(2.5, scale));
+      this.canvas.style.width = `${baseW * this.scale}px`;
+      this.canvas.style.height = `${baseH * this.scale}px`;
       this.slider.value = String(Math.round(this.scale * 100));
       this.output.value = `${Math.round(this.scale * 100)}%`;
       this.viewport.scrollLeft = contentCenterX * this.scale - this.viewport.clientWidth / 2;
@@ -2608,8 +2677,10 @@
     }
 
     fitMap() {
-      const horizontalScale = (this.viewport.clientWidth - 36) / this.canvas.width;
-      const verticalScale = (this.viewport.clientHeight - 36) / this.canvas.height;
+      const baseW = Number(this.canvas.dataset?.logicalWidth) || this.canvas.width;
+      const baseH = Number(this.canvas.dataset?.logicalHeight) || this.canvas.height;
+      const horizontalScale = (this.viewport.clientWidth - 36) / baseW;
+      const verticalScale = (this.viewport.clientHeight - 36) / baseH;
       this.setZoom(Math.min(horizontalScale, verticalScale, 1));
       this.viewport.scrollTo({ left:0, top:0, behavior:'smooth' });
     }
