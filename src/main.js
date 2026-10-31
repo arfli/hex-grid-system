@@ -9,12 +9,53 @@
 
   const scenarioPicker = document.getElementById('scenarioPicker');
   const sidePicker = document.getElementById('sidePicker');
+  const btnMapEditor = document.getElementById('btnMapEditor');
   const btnOob = document.getElementById('btnOob');
   const btnForceBuilder = document.getElementById('btnForceBuilder');
+  const mainEl = document.querySelector('main');
+  const gamePlayPanel = document.getElementById('gamePlayPanel');
+  const mapEditorPanel = document.getElementById('mapEditorPanel');
   const canvas = document.getElementById('game');
   const dialog = new window.HexWar.ModalDialog(document.getElementById('dialog'));
   const storyIntro = new window.HexWar.StoryIntro(document.getElementById('storyIntro'));
   let game = null;
+  let mapEditor = null;
+
+  function setEditorMode(enabled) {
+    if (!game) {
+      storyIntro.stop();
+      dialog.hide();
+      const preferredSide = scenario.factions[params.get('side')] ? params.get('side') : scenario.turnOrder[0];
+      startGame(preferredSide);
+    }
+    if (!mapEditor) return;
+    if (enabled) {
+      mapEditor.enable();
+      if (gamePlayPanel) gamePlayPanel.hidden = true;
+      if (mapEditorPanel) mapEditorPanel.hidden = false;
+      if (mainEl) mainEl.classList.add('editor-open');
+      if (btnMapEditor) {
+        btnMapEditor.classList.add('is-active');
+        btnMapEditor.textContent = '⚔ Exit Map Editor';
+      }
+    } else {
+      mapEditor.disable();
+      if (gamePlayPanel) gamePlayPanel.hidden = false;
+      if (mapEditorPanel) mapEditorPanel.hidden = true;
+      if (mainEl) mainEl.classList.remove('editor-open');
+      if (btnMapEditor) {
+        btnMapEditor.classList.remove('is-active');
+        btnMapEditor.textContent = '🛠 Map Editor';
+      }
+    }
+  }
+
+  if (btnMapEditor) {
+    btnMapEditor.addEventListener('click', () => {
+      const nextState = !(mapEditor && mapEditor.active);
+      setEditorMode(nextState);
+    });
+  }
 
   if (btnOob) {
     btnOob.addEventListener('click', () => {
@@ -67,6 +108,10 @@
       fitButton:document.getElementById('fitMap')
     });
     viewport.start();
+    if (window.HexWar.HexMapEditor && mapEditorPanel) {
+      mapEditor = new window.HexWar.HexMapEditor(game, viewport, mapEditorPanel);
+      window.mapEditor = mapEditor;
+    }
     window.game = game;
     window.mapViewport = viewport;
   }
@@ -92,8 +137,14 @@
   }
 
   async function boot() {
+    if (params.get('editor') === '1' || window.FORCE_MAP_EDITOR) {
+      const preferredSide = scenario.factions[params.get('side')] ? params.get('side') : scenario.turnOrder[0];
+      startGame(preferredSide);
+      setEditorMode(true);
+      return;
+    }
     if (scenario.intro) await storyIntro.play(scenario.intro);
-    showBriefing();
+    if (!game) showBriefing();
   }
 
   boot();

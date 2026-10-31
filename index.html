@@ -10,6 +10,7 @@
   <header>
     <div><div id="kicker" class="kicker"></div><h1 id="scenarioTitle"></h1></div>
     <div class="headerTools">
+      <button id="btnMapEditor" type="button" title="Open Visual Map Editor (Import, Flip & Place SVG Textures)">🛠 Map Editor</button>
       <button id="btnOob" type="button" title="View Order of Battle & C2 Network">OOB Tree</button>
       <button id="btnForceBuilder" type="button" title="Customize Scenario & Battle Parameters">Force Builder</button>
       <label for="scenarioPicker">Scenario</label><select id="scenarioPicker"></select>
@@ -28,13 +29,16 @@
       <canvas id="game" aria-label="Hex battlefield"></canvas>
     </section>
     <aside>
-      <div id="turnBox" class="turn"><strong id="turnTitle"></strong><small id="turnSub"></small></div>
-      <button id="endTurn" class="primary">End turn</button>
-      <section class="card"><h2>Selected unit</h2><div id="unitCard"></div></section>
-      <section class="card"><h2>Mission</h2><div id="mission"></div></section>
-      <section class="card"><h2>Combat log</h2><div id="log"></div></section>
-      <section class="card"><h2>Map key</h2><div id="legend" class="legend"></div></section>
-      <div class="help"><kbd>Click</kbd> a friendly unit, then highlighted hexes to spend movement points. Keep moving while points remain. Click a red target to fire during your faction's turn.</div>
+      <div id="gamePlayPanel">
+        <div id="turnBox" class="turn"><strong id="turnTitle"></strong><small id="turnSub"></small></div>
+        <button id="endTurn" class="primary">End turn</button>
+        <section class="card"><h2>Selected unit</h2><div id="unitCard"></div></section>
+        <section class="card"><h2>Mission</h2><div id="mission"></div></section>
+        <section class="card"><h2>Combat log</h2><div id="log"></div></section>
+        <section class="card"><h2>Map key</h2><div id="legend" class="legend"></div></section>
+        <div class="help"><kbd>Click</kbd> a friendly unit, then highlighted hexes to spend movement points. Keep moving while points remain. Click a red target to fire during your faction's turn.</div>
+      </div>
+      <div id="mapEditorPanel" hidden></div>
     </aside>
 </main>
 <div id="storyIntro" class="storyIntro" role="dialog" aria-modal="true" aria-labelledby="storyIntroTitle" hidden>
@@ -56,6 +60,7 @@
   <script src="src/hex-war-engine.js" defer></script>
   <script src="src/weapons-data.js" defer></script>
   <script src="scenarios/bite-the-dust.js" defer></script>
+  <script src="src/map-editor.js" defer></script>
   <script src="src/main.js" defer></script>
 </body>
 </html>

@@ -96,15 +96,25 @@
       this.load('baseTerrain', assetConfig.baseTerrain);
       this.load('explosion', assetConfig.explosion);
       Object.entries(assetConfig.terrain || {}).forEach(([id, path]) => this.load(`terrain:${id}`, path));
+      Object.entries(assetConfig.structures || {}).forEach(([id, path]) => this.load(`structure:${id}`, path));
       Object.entries(assetConfig.units || {}).forEach(([id, path]) => this.load(`unit:${id}`, path));
       Object.entries(assetConfig.effects || {}).forEach(([id, path]) => this.load(`effect:${id}`, path));
     }
 
     load(id, path) {
+      if (!path) return;
       const image = new Image();
       image.onload = () => this.onLoad?.();
       image.src = path;
       this.images.set(id, image);
+    }
+
+    registerTerrain(id, path) {
+      this.load(`terrain:${id}`, path);
+    }
+
+    registerStructure(id, path) {
+      this.load(`structure:${id}`, path);
     }
 
     get(id) { return this.images.get(id); }
@@ -120,6 +130,12 @@
       this.terrainCacheDirty = true;
       this.crispCache = new Map();
       this.perfStats = null;
+      this.showGrid = true;
+      this.showTopo = true;
+      this.showCoords = false;
+      this.hideUnits = false;
+      this.editorGhost = null;
+      this.editorSelectedCell = null;
     }
 
     invalidateTerrainCache() {
@@ -214,8 +230,136 @@
       }
       ctx.clearRect(0, 0, logicalW, logicalH);
       this.game.grid.cells.forEach(cell => this.bakeCell(cell, ctx));
-      this.bakeTopographicOverlay(ctx, logicalW, logicalH);
+      this.bakeUnclippedCells(ctx);
+      this.bakeStructures(ctx);
+      if (this.showTopo !== false) {
+        this.bakeTopographicOverlay(ctx, logicalW, logicalH);
+      }
+      if (this.showCoords) {
+        this.bakeCoordinatesOverlay(ctx);
+      }
       this.terrainCacheDirty = false;
+    }
+
+    drawCellTerrainLayer(cell, terrainId, transform, ctx) {
+      if (!terrainId) return;
+      const center = this.game.grid.toPixel(cell);
+      const size = this.game.grid.size;
+      const defaultScale = terrainId === 'crater' ? 0.8 : 1;
+      const scale = (transform && typeof transform.scale === 'number') ? transform.scale : defaultScale;
+      const flipX = transform?.flipX ? -1 : 1;
+      const flipY = transform?.flipY ? -1 : 1;
+      const rotationDeg = transform?.rotation || 0;
+      const offsetX = transform?.offsetX || 0;
+      const offsetY = transform?.offsetY || 0;
+      const drawSize = size * 2 * scale;
+
+      if (!rotationDeg && flipX === 1 && flipY === 1 && !offsetX && !offsetY) {
+        this.drawImage(`terrain:${terrainId}`, center.x - drawSize / 2, center.y - drawSize / 2, drawSize, drawSize, null, ctx);
+        return;
+      }
+
+      ctx.save();
+      ctx.translate(center.x + offsetX, center.y + offsetY);
+      if (rotationDeg) {
+        ctx.rotate((rotationDeg * Math.PI) / 180);
+      }
+      if (flipX !== 1 || flipY !== 1) {
+        ctx.scale(flipX, flipY);
+      }
+      this.drawImage(`terrain:${terrainId}`, -drawSize / 2, -drawSize / 2, drawSize, drawSize, null, ctx);
+      ctx.restore();
+    }
+
+    bakeUnclippedCells(ctx) {
+      this.game.grid.cells.forEach(cell => {
+        const terrainId = this.game.terrainAt(cell);
+        const transform = this.game.cellTransformAt?.(cell);
+        if (terrainId && transform?.clip === false) {
+          this.drawCellTerrainLayer(cell, terrainId, transform, ctx);
+        }
+        const layers = this.game.cellLayersAt?.(cell);
+        if (layers && layers.length) {
+          layers.forEach(layer => {
+            if (layer.clip === false) {
+              this.drawCellTerrainLayer(cell, layer.terrainId, layer, ctx);
+            }
+          });
+        }
+      });
+    }
+
+    bakeStructures(ctx) {
+      const structures = this.game.structures || this.game.scenario.structures;
+      if (!Array.isArray(structures) || !structures.length) return;
+
+      structures.forEach(structure => {
+        const assetKey = this.game.assets.get(`structure:${structure.asset}`)
+          ? `structure:${structure.asset}`
+          : `terrain:${structure.asset}`;
+        const image = this.game.assets.get(assetKey);
+        if (!image?.complete || !image.naturalWidth) return;
+
+        let centerX, centerY;
+        if (structure.center) {
+          const pixel = this.game.grid.toPixel(structure.center);
+          centerX = pixel.x + (structure.offsetX || 0);
+          centerY = pixel.y + (structure.offsetY || 0);
+        } else if (structure.cells && structure.cells.length) {
+          let sumX = 0;
+          let sumY = 0;
+          let count = 0;
+          structure.cells.forEach(coord => {
+            const cell = Array.isArray(coord) ? { q: coord[0], r: coord[1] } : coord;
+            const p = this.game.grid.toPixel(cell);
+            sumX += p.x;
+            sumY += p.y;
+            count++;
+          });
+          centerX = (sumX / count) + (structure.offsetX || 0);
+          centerY = (sumY / count) + (structure.offsetY || 0);
+        } else {
+          return;
+        }
+
+        const gridScale = (this.game.grid.size / 30) * (structure.scale || 1);
+        const width = (structure.width || image.naturalWidth) * gridScale;
+        const height = (structure.height || image.naturalHeight) * gridScale;
+        const flipX = structure.flipX ? -1 : 1;
+        const flipY = structure.flipY ? -1 : 1;
+        const rotationDeg = structure.rotation || 0;
+
+        ctx.save();
+        if (structure.shadow !== false) {
+          ctx.shadowColor = 'rgba(15, 12, 9, 0.45)';
+          ctx.shadowBlur = Math.round(6 * gridScale);
+          ctx.shadowOffsetX = Math.round(5 * gridScale);
+          ctx.shadowOffsetY = Math.round(6 * gridScale);
+        }
+        ctx.translate(centerX, centerY);
+        if (rotationDeg) {
+          ctx.rotate((rotationDeg * Math.PI) / 180);
+        }
+        if (flipX !== 1 || flipY !== 1) {
+          ctx.scale(flipX, flipY);
+        }
+        ctx.drawImage(image, -width / 2, -height / 2, width, height);
+        ctx.restore();
+      });
+    }
+
+    bakeCoordinatesOverlay(ctx) {
+      ctx.save();
+      ctx.font = 'bold 8px ui-monospace, monospace';
+      ctx.textAlign = 'center';
+      ctx.fillStyle = 'rgba(20, 18, 12, 0.8)';
+      this.game.grid.cells.forEach(cell => {
+        const center = this.game.grid.toPixel(cell);
+        const col = cell.q + Math.floor(cell.r / 2);
+        const row = cell.r;
+        ctx.fillText(`${col},${row}`, center.x, center.y - this.game.grid.size * 0.35);
+      });
+      ctx.restore();
     }
 
     bakeTopographicOverlay(ctx, w, h) {
@@ -274,19 +418,29 @@
       const center = this.game.grid.toPixel(cell);
       const size = this.game.grid.size;
       const terrainId = this.game.terrainAt(cell);
+      const transform = this.game.cellTransformAt?.(cell);
+      const layers = this.game.cellLayersAt?.(cell);
       this.hexPath(cell, ctx);
       ctx.save();
       ctx.clip();
       this.drawImage('baseTerrain', center.x - size, center.y - size, size * 2, size * 2, '#9a8658', ctx);
-      if (terrainId) {
-        const scale = terrainId === 'crater' ? 0.8 : 1;
-        this.drawImage(`terrain:${terrainId}`, center.x - size * scale, center.y - size * scale, size * 2 * scale, size * 2 * scale, null, ctx);
+      if (terrainId && (!transform || transform.clip !== false)) {
+        this.drawCellTerrainLayer(cell, terrainId, transform, ctx);
+      }
+      if (layers && layers.length) {
+        layers.forEach(layer => {
+          if (layer.clip !== false) {
+            this.drawCellTerrainLayer(cell, layer.terrainId, layer, ctx);
+          }
+        });
       }
       ctx.restore();
-      this.hexPath(cell, ctx);
-      ctx.strokeStyle = '#3c3828';
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
+      if (this.showGrid !== false) {
+        this.hexPath(cell, ctx);
+        ctx.strokeStyle = '#3c3828';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+      }
     }
 
     drawReachableHighlight(cell) {
@@ -501,14 +655,15 @@
       }
 
       this.game.objectives.forEach((objective, index) => this.drawObjective(objective, index, ctx));
-      this.drawTacticalDatalinks(ctx);
-
-      const animatingSet = new Set(this.game.animatingUnits);
-      this.game.livingUnits.forEach(unit => {
-        if (!animatingSet.has(unit)) {
-          this.drawUnit(unit, ctx);
-        }
-      });
+      if (!this.hideUnits) {
+        this.drawTacticalDatalinks(ctx);
+        const animatingSet = new Set(this.game.animatingUnits);
+        this.game.livingUnits.forEach(unit => {
+          if (!animatingSet.has(unit)) {
+            this.drawUnit(unit, ctx);
+          }
+        });
+      }
     }
 
     drawAnimatedFrame(animatingUnits) {
@@ -528,7 +683,9 @@
       this.context.drawImage(this.cachedStaticScene, 0, 0, logicalW, logicalH);
 
       // Draw only the active moving unit(s)
-      animatingUnits.forEach(unit => this.drawUnit(unit));
+      if (!this.hideUnits) {
+        animatingUnits.forEach(unit => this.drawUnit(unit));
+      }
 
       // Dynamic particle & tracer passes
       this.drawGroundParticles();
@@ -561,7 +718,7 @@
       }
 
       // Hide reachable highlights while animating to avoid visual noise
-      if (!this.game.isAnimating()) {
+      if (!this.game.isAnimating() && !this.game.editorActive) {
         const reachable = this.game.getReachableCells();
         if (reachable && reachable.length) {
           reachable.forEach(cell => this.drawReachableHighlight(cell));
@@ -570,18 +727,68 @@
 
       this.game.objectives.forEach((objective, index) => this.drawObjective(objective, index));
       this.drawGroundParticles();
-      this.drawTacticalDatalinks();
-      this.drawEngagementEnvelopes();
-      this.game.livingUnits.forEach(unit => this.drawUnit(unit));
+      if (!this.hideUnits) {
+        this.drawTacticalDatalinks();
+        this.drawEngagementEnvelopes();
+        this.game.livingUnits.forEach(unit => this.drawUnit(unit));
+      }
       this.drawAirParticles();
       this.drawTracers();
-      this.drawTargets();
+      if (!this.game.editorActive) {
+        this.drawTargets();
+      }
       this.drawImpacts();
       this.drawAirMissions();
+      if (this.game.editorActive) {
+        this.drawEditorOverlay();
+      }
 
       if (t0) {
         this.recordPerf(nowTime() - t0);
       }
+    }
+
+    drawEditorOverlay() {
+      const ctx = this.context;
+      if (this.editorSelectedCell) {
+        ctx.save();
+        this.hexPath(this.editorSelectedCell, ctx);
+        ctx.strokeStyle = '#ffdf68';
+        ctx.lineWidth = 3;
+        ctx.setLineDash([5, 3]);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      const ghost = this.editorGhost;
+      if (!ghost || !ghost.cell) return;
+      ctx.save();
+      if (ghost.terrainId && ghost.tool === 'paint') {
+        ctx.globalAlpha = 0.72;
+        if (ghost.transform?.clip !== false) {
+          this.hexPath(ghost.cell, ctx);
+          ctx.clip();
+        }
+        this.drawCellTerrainLayer(ghost.cell, ghost.terrainId, ghost.transform, ctx);
+      }
+      ctx.restore();
+
+      ctx.save();
+      this.hexPath(ghost.cell, ctx);
+      if (ghost.tool === 'erase') {
+        ctx.fillStyle = 'rgba(233, 84, 63, 0.28)';
+        ctx.fill();
+        ctx.strokeStyle = '#ff543f';
+      } else if (ghost.tool === 'select' || ghost.tool === 'pick') {
+        ctx.fillStyle = 'rgba(255, 223, 104, 0.18)';
+        ctx.fill();
+        ctx.strokeStyle = '#ffdf68';
+      } else {
+        ctx.strokeStyle = '#e9743f';
+      }
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+      ctx.restore();
     }
 
     recordPerf(duration) {
@@ -1217,6 +1424,20 @@
       this.factions = scenario.factions;
       this.objectives = scenario.objectives.map(item => ({ ...item }));
       this.terrain = this.createTerrainMap(scenario.terrain);
+      this.cellTransforms = this.createCellTransformsMap(scenario.cellTransforms);
+      this.cellLayers = this.createCellLayersMap(scenario.cellLayers);
+      this.structures = Array.isArray(scenario.structures) ? scenario.structures.map(s => ({ ...s })) : [];
+      if (this.structures.length) {
+        this.structures.forEach(struct => {
+          if (struct.terrainType && Array.isArray(struct.cells)) {
+            struct.cells.forEach(coord => {
+              const q = Array.isArray(coord) ? coord[0] : coord.q;
+              const r = Array.isArray(coord) ? coord[1] : coord.r;
+              this.terrain.set(`${q},${r}`, struct.terrainType);
+            });
+          }
+        });
+      }
       this.units = this.createUnits(scenario.units, scenario.unitTypes);
       this.activeFaction = scenario.turnOrder[0];
       this.turn = 1;
@@ -1224,6 +1445,7 @@
       this.gameOver = false;
       this.aiRunning = false;
       this.cinematicRunning = false;
+      this.editorActive = !!options.editorActive;
       this.triggeredEvents = new Set();
       this.airMissions = [];
       this.impacts = [];
@@ -1276,15 +1498,37 @@
           if (this.isAnimating()) this.skipAnimations();
         });
       }
-      document.getElementById('endTurn').addEventListener('click', () => this.endTurn());
+      document.getElementById('endTurn')?.addEventListener('click', () => this.endTurn());
       this.scenario.openingLog.forEach(message => this.ui.log(message));
       this.update();
-      this.scheduleAITurn();
+      if (!this.editorActive) {
+        this.scheduleAITurn();
+      }
     }
 
     createTerrainMap(groups) {
       const map = new Map();
       Object.entries(groups || {}).forEach(([terrainId, cells]) => cells.forEach(([q, r]) => map.set(`${q},${r}`, terrainId)));
+      return map;
+    }
+
+    createCellTransformsMap(transforms) {
+      const map = new Map();
+      Object.entries(transforms || {}).forEach(([key, val]) => {
+        if (val && typeof val === 'object') {
+          map.set(key, { ...val });
+        }
+      });
+      return map;
+    }
+
+    createCellLayersMap(layers) {
+      const map = new Map();
+      Object.entries(layers || {}).forEach(([key, arr]) => {
+        if (Array.isArray(arr)) {
+          map.set(key, arr.map(item => ({ ...item })));
+        }
+      });
       return map;
     }
 
@@ -1360,7 +1604,80 @@
     get livingUnits() { return this.units.filter(unit => unit.health > 0); }
     hasLivingUnits(faction) { return this.livingUnits.some(unit => unit.faction === faction); }
     terrainAt(cell) { return this.terrain.get(this.grid.key(cell)); }
+    cellTransformAt(cell) { return this.cellTransforms.get(this.grid.key(cell)) || null; }
+    cellLayersAt(cell) { return this.cellLayers.get(this.grid.key(cell)) || []; }
     unitAt(cell) { return this.livingUnits.find(unit => unit.q === cell.q && unit.r === cell.r); }
+
+    setCellTerrain(cell, terrainId, transform = null, addAsLayer = false) {
+      const key = this.grid.key(cell);
+      const cleanTransform = transform ? {
+        flipX: !!transform.flipX,
+        flipY: !!transform.flipY,
+        rotation: Number(transform.rotation) || 0,
+        scale: (typeof transform.scale === 'number' && !Number.isNaN(transform.scale)) ? transform.scale : 1,
+        offsetX: Number(transform.offsetX) || 0,
+        offsetY: Number(transform.offsetY) || 0,
+        clip: transform.clip !== false
+      } : null;
+
+      if (addAsLayer && terrainId) {
+        const existing = this.cellLayers.get(key) || [];
+        existing.push({ terrainId, ...(cleanTransform || { flipX: false, flipY: false, rotation: 0, scale: 1, offsetX: 0, offsetY: 0, clip: true }) });
+        this.cellLayers.set(key, existing);
+        if (!this.terrain.has(key)) {
+          this.terrain.set(key, terrainId);
+        }
+      } else if (terrainId) {
+        this.terrain.set(key, terrainId);
+        const hasNonDefault = cleanTransform && (
+          cleanTransform.flipX ||
+          cleanTransform.flipY ||
+          cleanTransform.rotation !== 0 ||
+          cleanTransform.scale !== 1 ||
+          cleanTransform.offsetX !== 0 ||
+          cleanTransform.offsetY !== 0 ||
+          cleanTransform.clip === false
+        );
+        if (hasNonDefault) {
+          this.cellTransforms.set(key, cleanTransform);
+        } else {
+          this.cellTransforms.delete(key);
+        }
+      } else {
+        this.clearCellTerrain(cell);
+        return;
+      }
+      this.invalidateTerrainCache();
+      this.invalidateReachableCache();
+      this.render();
+    }
+
+    clearCellTerrain(cell) {
+      const key = this.grid.key(cell);
+      this.terrain.delete(key);
+      this.cellTransforms.delete(key);
+      this.cellLayers.delete(key);
+      this.invalidateTerrainCache();
+      this.invalidateReachableCache();
+      this.render();
+    }
+
+    registerCustomTerrain(id, src, meta = {}) {
+      if (!id || !src) return;
+      this.scenario.assets.terrain = this.scenario.assets.terrain || {};
+      this.scenario.assets.terrain[id] = src;
+      this.scenario.terrainTypes = this.scenario.terrainTypes || {};
+      if (!this.scenario.terrainTypes[id] || meta.label) {
+        this.scenario.terrainTypes[id] = {
+          label: meta.label || id,
+          movementCost: typeof meta.movementCost === 'number' ? meta.movementCost : 1,
+          defense: typeof meta.defense === 'number' ? meta.defense : 0
+        };
+      }
+      this.assets.registerTerrain(id, src);
+      this.invalidateTerrainCache();
+      this.render();
+    }
 
     movementCost(destination) {
       const terrainId = this.terrainAt(destination);
@@ -1443,6 +1760,7 @@
     }
 
     handleClick(event) {
+      if (this.editorActive) return;
       if (this.isAnimating()) {
         this.skipAnimations();
         return;
@@ -2693,7 +3011,9 @@
     }
 
     beginPan(event) {
-      if (event.button !== 0 || event.target.closest('#mapControls')) return;
+      if (event.target.closest('#mapControls')) return;
+      if (event.button === 0 && (event.shiftKey || this.disableLeftPan)) return;
+      if (event.button !== 0 && event.button !== 1) return;
       this.drag = {
         pointerId:event.pointerId,
         captureTarget:event.target,

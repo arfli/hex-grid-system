@@ -28,7 +28,8 @@
       baseTerrain:'assets/imgs/hex-desert-terrain.jpg',
       explosion:'assets/imgs/dmg_explosion.png',
       terrain: {
-        field:'assets/svg/field.svg', road:'assets/svg/road.svg', urban:'assets/svg/urban.svg',
+        field:'assets/svg/field.svg', field_edge:'assets/svg/field_edge.svg',
+        road:'assets/svg/road.svg', urban:'assets/svg/urban.svg',
         trench:'assets/svg/trench.svg', canal:'assets/svg/canal.svg', bridge:'assets/svg/bridge.svg',
         crater:'assets/imgs/crater.png'
       },
@@ -58,6 +59,7 @@
 
     terrainTypes: {
       field:{ label:'Irrigated field', movementCost:1.2, defense:0 },
+      field_edge:{ label:'Field edge', movementCost:1.1, defense:0 },
       road:{ label:'Highway', movementCost:0.5, defense:0 },
       urban:{ label:'Urban blocks', movementCost:1.5, defense:2 },
       trench:{ label:'Prepared defenses', movementCost:1.5, defense:2 },
