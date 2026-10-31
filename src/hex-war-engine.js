@@ -7,13 +7,13 @@
 
   const MOVE_ANIM = {
     enabled: true,
-    durationPerHex: 240, // ms per hex (~0.24s for smooth tank glide)
-    settleDuration: 130, // ms for arrival bounce/settle
-    bob: true,           // subtle vertical hop while moving
-    bobHeight: 3,        // max pixel bob height
+    durationPerHex: 200, // ms per hex (~0.20s for smooth military glide)
+    settleDuration: 0,   // no bounce or settle delay
+    bob: false,          // completely disabled: no vertical hop
+    bobHeight: 0,        // 0px hop
     shadow: true,        // soft ground shadow under moving unit
     dust: true,          // dust particles at entered hexes
-    settle: true         // slight bounce on arrival
+    settle: false        // completely disabled: no arrival bounce
   };
 
   // Per-sprite alpha-bounds & hull-pivot normalization metadata.
@@ -117,13 +117,11 @@
       this.game = game;
       this.cachedTerrainCanvas = null;
       this.terrainCacheDirty = true;
-      this.spriteMipCache = new Map();
       this.perfStats = null;
     }
 
     invalidateTerrainCache() {
       this.terrainCacheDirty = true;
-      if (this.spriteMipCache) this.spriteMipCache.clear();
     }
 
     createOffscreenCanvas(width, height) {
@@ -141,49 +139,13 @@
       return null;
     }
 
-    getCrispUnitImage(assetId, targetPhysicalW, targetPhysicalH) {
-      const image = this.game.assets.get(assetId);
-      if (!image?.complete || !image.naturalWidth || !image.naturalHeight) return null;
-      const srcW = image.naturalWidth;
-      const srcH = image.naturalHeight;
-      if (srcW <= targetPhysicalW * 1.85 || isHeadless) return image;
-
-      // Multi-step 0.5x halving mipmap prevents browser single-pass bilinear downsampling blur
-      const bucketW = Math.max(32, Math.round(targetPhysicalW * 1.35));
-      const cacheKey = `${assetId}@${bucketW}`;
-      if (this.spriteMipCache.has(cacheKey)) {
-        return this.spriteMipCache.get(cacheKey);
-      }
-
-      let curSource = image;
-      let curW = srcW;
-      let curH = srcH;
-
-      while (curW * 0.5 >= bucketW) {
-        const nextW = Math.max(1, Math.round(curW * 0.5));
-        const nextH = Math.max(1, Math.round(curH * 0.5));
-        const stepCanvas = this.createOffscreenCanvas(nextW, nextH);
-        const stepCtx = stepCanvas && typeof stepCanvas.getContext === 'function' ? stepCanvas.getContext('2d') : null;
-        if (!stepCtx || typeof stepCtx.drawImage !== 'function') return image;
-        stepCtx.imageSmoothingEnabled = true;
-        if ('imageSmoothingQuality' in stepCtx) stepCtx.imageSmoothingQuality = 'high';
-        stepCtx.drawImage(curSource, 0, 0, nextW, nextH);
-        curSource = stepCanvas;
-        curW = nextW;
-        curH = nextH;
-      }
-
-      this.spriteMipCache.set(cacheKey, curSource);
-      return curSource;
-    }
-
     bakeTerrain() {
       if (!this.canvas) {
         this.terrainCacheDirty = false;
         return;
       }
-      const w = this.game.logicalWidth || this.canvas.width;
-      const h = this.game.logicalHeight || this.canvas.height;
+      const w = this.canvas.width;
+      const h = this.canvas.height;
       if (!this.cachedTerrainCanvas || this.cachedTerrainCanvas.width !== w || this.cachedTerrainCanvas.height !== h) {
         this.cachedTerrainCanvas = this.createOffscreenCanvas(w, h);
       }
@@ -459,17 +421,10 @@
         this.bakeTerrain();
       }
 
-      const renderScale = this.game.renderScale || 1;
-      const logicalW = this.game.logicalWidth || this.canvas.width;
-      const logicalH = this.game.logicalHeight || this.canvas.height;
-
-      if (typeof this.context.setTransform === 'function') {
-        this.context.setTransform(renderScale, 0, 0, renderScale, 0, 0);
-      }
-      this.context.clearRect(0, 0, logicalW, logicalH);
+      this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
       if (this.cachedTerrainCanvas) {
-        this.context.drawImage(this.cachedTerrainCanvas, 0, 0, logicalW, logicalH);
+        this.context.drawImage(this.cachedTerrainCanvas, 0, 0);
       } else {
         this.game.grid.cells.forEach(cell => this.bakeCell(cell, this.context));
       }
@@ -694,13 +649,7 @@
 
       const drawX = -metrics.drawW * (0.5 + metrics.centerShiftX);
       const drawY = -metrics.drawH * 0.5;
-      const renderScale = this.game.renderScale || 1;
-      const crispSource = this.getCrispUnitImage(metrics.assetId, metrics.drawW * renderScale, metrics.drawH * renderScale);
-      if (crispSource) {
-        ctx.drawImage(crispSource, drawX, drawY, metrics.drawW, metrics.drawH);
-      } else {
-        this.drawImage(metrics.assetId, drawX, drawY, metrics.drawW, metrics.drawH, '#333');
-      }
+      this.drawImage(metrics.assetId, drawX, drawY, metrics.drawW, metrics.drawH, '#333');
       ctx.restore();
 
       // 4. Health bar scaled to hex size (top of hex)
@@ -812,12 +761,11 @@
 
     drawAirMissions() {
       const now = nowTime();
-      const logicalW = this.game.logicalWidth || this.canvas.width;
       this.game.airMissions.forEach(mission => {
         const progress = Math.max(0, Math.min(1, (now - mission.startedAt) / mission.duration));
         const width = 270;
         const height = 214;
-        const x = -width + progress * (logicalW + width * 2);
+        const x = -width + progress * (this.canvas.width + width * 2);
         const y = mission.y + Math.sin(progress * Math.PI * 2) * 16;
         this.context.save();
         this.context.globalAlpha = Math.min(1, progress * 8, (1 - progress) * 8);
@@ -1171,20 +1119,11 @@
     }
 
     start() {
-      this.logicalWidth = this.scenario.map.width;
-      this.logicalHeight = this.scenario.map.height;
-      this.renderScale = isHeadless
-        ? 1
-        : Math.min(2.25, Math.max(2, (typeof window !== 'undefined' && window.devicePixelRatio) || 1));
-      if (this.canvas.dataset) {
-        this.canvas.dataset.logicalWidth = String(this.logicalWidth);
-        this.canvas.dataset.logicalHeight = String(this.logicalHeight);
-      }
-      this.canvas.width = Math.round(this.logicalWidth * this.renderScale);
-      this.canvas.height = Math.round(this.logicalHeight * this.renderScale);
+      this.canvas.width = this.scenario.map.width;
+      this.canvas.height = this.scenario.map.height;
       if (this.canvas.style) {
-        this.canvas.style.width = `${this.logicalWidth}px`;
-        this.canvas.style.height = `${this.logicalHeight}px`;
+        this.canvas.style.width = `${this.scenario.map.width}px`;
+        this.canvas.style.height = `${this.scenario.map.height}px`;
       }
       this.ui.initialize();
       this.invalidateTerrainCache();
@@ -1368,9 +1307,7 @@
       }
       if (this.gameOver || this.aiRunning || this.cinematicRunning || this.activeFaction !== this.playerFaction) return;
       const bounds = this.canvas.getBoundingClientRect();
-      const logicalW = this.logicalWidth || this.canvas.width;
-      const logicalH = this.logicalHeight || this.canvas.height;
-      const cell = this.grid.closestCell((event.clientX - bounds.left) * logicalW / bounds.width, (event.clientY - bounds.top) * logicalH / bounds.height);
+      const cell = this.grid.closestCell((event.clientX - bounds.left) * this.canvas.width / bounds.width, (event.clientY - bounds.top) * this.canvas.height / bounds.height);
       if (!cell) return;
       const clickedUnit = this.unitAt(cell);
       if (clickedUnit?.faction === this.activeFaction) return this.select(clickedUnit);
@@ -1859,19 +1796,12 @@
       if (!anim || anim.finished) return true;
 
       if (anim.isSettling) {
-        const settleElapsed = now - anim.settleStartTime;
-        const settleDur = this.animConfig.settleDuration;
-        if (settleElapsed >= settleDur || !this.animConfig.settle) {
-          anim.bobY = 0;
-          anim.renderX = anim.waypoints[anim.numSegments].x;
-          anim.renderY = anim.waypoints[anim.numSegments].y;
-          anim.finished = true;
-          this.invalidateReachableCache();
-          return true;
-        }
-        const u = settleElapsed / settleDur;
-        anim.bobY = Math.sin(u * Math.PI * 2) * (1 - u) * 3;
-        return false;
+        anim.bobY = 0;
+        anim.renderX = anim.waypoints[anim.numSegments].x;
+        anim.renderY = anim.waypoints[anim.numSegments].y;
+        anim.finished = true;
+        this.invalidateReachableCache();
+        return true;
       }
 
       anim.elapsed += dt;
@@ -1912,12 +1842,7 @@
       const p1 = anim.waypoints[segIndex + 1];
       anim.renderX = p0.x + (p1.x - p0.x) * segU;
       anim.renderY = p0.y + (p1.y - p0.y) * segU;
-
-      if (this.animConfig.bob) {
-        anim.bobY = -Math.sin(segU * Math.PI) * this.animConfig.bobHeight;
-      } else {
-        anim.bobY = 0;
-      }
+      anim.bobY = 0;
 
       const targetAngle = anim.segmentAngles[segIndex];
       let diff = targetAngle - anim.renderFacing;
@@ -1931,17 +1856,12 @@
 
       if (anim.elapsed >= T) {
         anim.renderFacing = unit.facing;
-        if (this.animConfig.settle) {
-          anim.isSettling = true;
-          anim.settleStartTime = now;
-        } else {
-          anim.renderX = anim.waypoints[N].x;
-          anim.renderY = anim.waypoints[N].y;
-          anim.bobY = 0;
-          anim.finished = true;
-          this.invalidateReachableCache();
-          return true;
-        }
+        anim.renderX = anim.waypoints[N].x;
+        anim.renderY = anim.waypoints[N].y;
+        anim.bobY = 0;
+        anim.finished = true;
+        this.invalidateReachableCache();
+        return true;
       }
       return false;
     }
@@ -2663,8 +2583,8 @@
 
     setZoom(scale) {
       const oldScale = this.scale;
-      const baseW = Number(this.canvas.dataset?.logicalWidth) || this.canvas.width;
-      const baseH = Number(this.canvas.dataset?.logicalHeight) || this.canvas.height;
+      const baseW = this.canvas.width;
+      const baseH = this.canvas.height;
       const contentCenterX = (this.viewport.scrollLeft + this.viewport.clientWidth / 2) / oldScale;
       const contentCenterY = (this.viewport.scrollTop + this.viewport.clientHeight / 2) / oldScale;
       this.scale = Math.max(0.35, Math.min(2.5, scale));
@@ -2677,8 +2597,8 @@
     }
 
     fitMap() {
-      const baseW = Number(this.canvas.dataset?.logicalWidth) || this.canvas.width;
-      const baseH = Number(this.canvas.dataset?.logicalHeight) || this.canvas.height;
+      const baseW = this.canvas.width;
+      const baseH = this.canvas.height;
       const horizontalScale = (this.viewport.clientWidth - 36) / baseW;
       const verticalScale = (this.viewport.clientHeight - 36) / baseH;
       this.setZoom(Math.min(horizontalScale, verticalScale, 1));
